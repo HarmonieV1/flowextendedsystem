@@ -1,0 +1,6 @@
+.wrap{display:flex;flex-direction:column;height:100%;overflow:hidden;background:#09090b;}
+.header{display:flex;align-items:center;gap:6px;padding:5px 8px;border-bottom:1px solid var(--brd);background:var(--bg1);flex-shrink:0;height:28px;overflow:hidden;}
+.title{font-size:9px;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
+.live{font-size:7px;background:rgba(0,229,160,.15);color:var(--grn);border:1px solid rgba(0,229,160,.25);padding:1px 5px;border-radius:2px;font-weight:700;letter-spacing:.3px;flex-shrink:0;}
+.wall{font-size:8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.canvas{display:block;width:100%;flex:1;}

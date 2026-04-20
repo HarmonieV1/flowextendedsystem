@@ -1,0 +1,108 @@
+.root { display:flex; flex-direction:column; height:100vh; overflow:hidden; background:var(--bg0); }
+
+/* ── TRADE WORKSPACE ── */
+.workspace {
+  display:grid;
+  grid-template-columns: 200px 1fr 280px;
+  flex:1; min-height:0; overflow:hidden;
+}
+
+/* LEFT COL — orderbook top, liquidity map bottom */
+.leftCol {
+  display:grid;
+  grid-template-rows: 1fr 200px;
+  border-right:1px solid var(--brd);
+  min-height:0; overflow:hidden;
+}
+.leftTop  { min-height:0; overflow:hidden; border-bottom:1px solid var(--brd); }
+.leftBottom { min-height:0; overflow:hidden; }
+
+/* CENTRE COL — chart + orders */
+.centreCol {
+  display:grid;
+  grid-template-rows: 1fr 160px;
+  min-height:0; overflow:hidden;
+  border-right:1px solid var(--brd);
+}
+.chartArea  { min-height:0; overflow:hidden; }
+.ordersArea { min-height:0; overflow:hidden; border-top:1px solid var(--brd); }
+
+/* RIGHT COL — form */
+.rightCol { display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+
+/* ── MOBILE ── */
+@media (max-width:768px) {
+  .workspace {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+  }
+  .leftCol  { display:none; }
+  .centreCol {
+    grid-template-rows: 1fr;
+    border-right:none;
+  }
+  .ordersArea { display:none; }
+  .rightCol   { display:none; }
+}
+
+/* Mobile buy/sell button */
+.mobileBtn {
+  display:none;
+}
+@media (max-width:768px) {
+  .mobileBtn {
+    display:flex; align-items:center; justify-content:center;
+    position:fixed; bottom:68px; left:12px; right:12px;
+    padding:14px; height:48px;
+    background:var(--grn); color:#000; border:none;
+    border-radius:10px; font-family:var(--mono);
+    font-size:13px; font-weight:800; letter-spacing:.3px;
+    cursor:pointer; z-index:60;
+    box-shadow:0 4px 24px rgba(0,229,160,.35);
+    transition:all .15s;
+  }
+  .mobileBtn:active { transform:scale(.98); }
+  .mobileBtnClose {
+    background:var(--bg3); color:var(--txt2);
+    box-shadow:none; border:1px solid var(--brd2);
+  }
+}
+
+/* Mobile bottom sheet */
+.sheet { display:none; }
+@media (max-width:768px) {
+  .sheet {
+    display:flex; flex-direction:column;
+    position:fixed; bottom:56px; left:0; right:0;
+    height:78vh;
+    background:var(--bg1);
+    border-top:1px solid var(--brd);
+    border-radius:16px 16px 0 0;
+    z-index:55; overflow:hidden;
+    box-shadow:0 -8px 40px rgba(0,0,0,.6);
+    animation:slideUp .2s ease;
+  }
+}
+@keyframes slideUp {
+  from { transform:translateY(40px); opacity:0 }
+  to   { transform:translateY(0);    opacity:1 }
+}
+.sheetHandle {
+  width:36px; height:4px;
+  background:var(--bg4); border-radius:2px;
+  margin:10px auto 0; flex-shrink:0;
+}
+.sheetTabs {
+  display:flex; border-bottom:1px solid var(--brd); flex-shrink:0;
+}
+.sheetTab {
+  flex:1; padding:11px; border:none; background:transparent;
+  color:var(--txt3); font-family:var(--mono); font-size:12px;
+  font-weight:600; cursor:pointer; position:relative; transition:color .12s;
+}
+.sheetTab.sheetTabOn { color:var(--txt); }
+.sheetTab.sheetTabOn::after {
+  content:''; position:absolute; bottom:0; left:0; right:0;
+  height:2px; background:var(--grn);
+}
+.sheetContent { flex:1; overflow-y:auto; min-height:0; }

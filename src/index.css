@@ -1,0 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@700;800&display=swap');
+
+:root {
+  --bg0:#09090b;--bg1:#0f0f12;--bg2:#141418;--bg3:#1a1a20;--bg4:#202028;
+  --brd:rgba(255,255,255,0.06);--brd2:rgba(255,255,255,0.11);
+  --txt:#f4f4f5;--txt2:#71717a;--txt3:#3f3f46;
+  --grn:#00e5a0;--grn2:rgba(0,229,160,0.1);
+  --red:#ff3b5c;--red2:rgba(255,59,92,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body,#root{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);font-family:var(--mono);font-size:11.5px}
+button{cursor:pointer;font-family:var(--mono)}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}

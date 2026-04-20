@@ -1,0 +1,51 @@
+.wrap { display:flex; flex-direction:column; gap:12px; padding:16px; height:100%; overflow-y:auto; }
+
+.sides { display:grid; grid-template-columns:1fr 1fr; gap:4px; border:1px solid var(--brd); border-radius:8px; padding:3px; background:var(--bg2); }
+.side { padding:11px; border:none; border-radius:6px; background:transparent; font-family:var(--mono); font-size:14px; font-weight:800; letter-spacing:.3px; cursor:pointer; transition:all .15s; }
+.buySide.sideOn  { background:var(--grn); color:#000; }
+.sellSide.sideOn { background:var(--red); color:#fff; }
+.side:not(.sideOn) { color:var(--txt3); }
+
+.modeRow { display:flex; gap:4px; }
+.modeBtn { flex:1; padding:7px; border:1px solid var(--brd); border-radius:4px; background:transparent; color:var(--txt3); font-family:var(--mono); font-size:10px; cursor:pointer; transition:all .12s; text-align:center; }
+.modeOn { border-color:var(--brd2); color:var(--txt); background:var(--bg3); }
+
+.sizeGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+.usdGrid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.sizeBtn {
+  padding:12px 6px; border:1px solid var(--brd); border-radius:6px;
+  background:var(--bg2); font-family:var(--mono); font-size:13px;
+  font-weight:700; cursor:pointer; transition:all .15s; text-align:center;
+  color:var(--txt3); min-height:48px;
+}
+.sizeBtn:active { transform:scale(.96); }
+.sizeBtnOn.sizeBtnBuy  { border-color:var(--grn); color:var(--grn); background:var(--grn2); box-shadow:0 0 12px rgba(0,229,160,.2); }
+.sizeBtnOn.sizeBtnSell { border-color:var(--red); color:var(--red); background:var(--red2); box-shadow:0 0 12px rgba(255,59,92,.2); }
+
+.preview { background:var(--bg2); border:1px solid var(--brd); border-radius:8px; padding:10px 14px; display:flex; flex-direction:column; gap:6px; }
+.previewRow { display:flex; justify-content:space-between; align-items:center; font-size:12px; }
+.previewRow span:first-child { color:var(--txt3); }
+.previewRow span:last-child { color:var(--txt); font-weight:500; }
+.previewQty { font-weight:700 !important; }
+.previewTotal { font-size:14px !important; font-weight:800 !important; }
+.buyColor  { color:var(--grn) !important; }
+.sellColor { color:var(--red) !important; }
+
+.execBtn {
+  width:100%; padding:16px; border:none; border-radius:10px;
+  font-family:var(--mono); font-size:14px; font-weight:800;
+  letter-spacing:.3px; cursor:pointer; transition:all .15s;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  min-height:56px;
+}
+.execBuy  { background:var(--grn); color:#000; }
+.execSell { background:var(--red); color:#fff; }
+.execDone { background:rgba(0,229,160,.3) !important; color:var(--grn) !important; }
+.execErr  { background:rgba(255,59,92,.2) !important; color:var(--red) !important; }
+.execBtn:disabled { opacity:.4; cursor:not-allowed; }
+.execBtn:not(:disabled):active { transform:scale(.98); }
+
+.spinner { width:14px; height:14px; border-radius:50%; border:2px solid rgba(0,0,0,.2); border-top-color:#000; animation:spin .7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg) } }
+
+.feeNote { text-align:center; font-size:10px; color:var(--txt3); }

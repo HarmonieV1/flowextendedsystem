@@ -1,0 +1,25 @@
+.bar{display:flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-bottom:1px solid rgba(0,229,160,.15);background:linear-gradient(90deg,rgba(0,229,160,.04) 0%,transparent 60%);overflow-x:auto;scrollbar-width:none;flex-shrink:0;}
+.bar::-webkit-scrollbar{display:none;}
+.bestLabel{font-size:9px;color:var(--grn);font-weight:800;letter-spacing:1px;white-space:nowrap;flex-shrink:0;}
+.src{display:flex;align-items:center;gap:5px;height:22px;padding:0 8px;border:1px solid var(--brd);border-radius:4px;background:var(--bg2);white-space:nowrap;transition:all .2s;flex-shrink:0;}
+.src.best{border-color:rgba(0,229,160,.4);background:rgba(0,229,160,.07);box-shadow:0 0 8px rgba(0,229,160,.12);}
+.src.dex{border-style:dashed;}
+.dexTag{font-size:7px;background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.3);padding:1px 4px;border-radius:2px;font-weight:700;}
+.srcName{font-size:9px;color:var(--txt3);}
+.srcPx{font-size:11px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;}
+.dash{color:var(--txt3);font-size:10px;}
+.bestTag{font-size:7px;background:var(--grn);color:#000;padding:1px 5px;border-radius:2px;font-weight:800;letter-spacing:.3px;}
+.diff{font-size:9px;color:var(--red);}
+.sep{width:1px;height:14px;background:var(--brd);flex-shrink:0;margin:0 2px;}
+.savings{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--txt2);white-space:nowrap;background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.2);border-radius:4px;padding:2px 8px;flex-shrink:0;}
+.savings strong{color:var(--grn);}
+
+/* Fear & Greed */
+.fgWrap{display:flex;align-items:center;gap:5px;flex-shrink:0;white-space:nowrap;}
+.fgLabel{font-size:8px;color:var(--txt3);letter-spacing:.4px;font-weight:600;}
+.fgBar{width:48px;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;flex-shrink:0;}
+.fgFill{height:100%;border-radius:2px;transition:width .5s,background .5s;}
+.fgVal{font-size:10px;font-weight:700;}
+.fgText{font-size:8px;font-weight:600;}
+.nokyc{font-size:9px;color:var(--txt3);white-space:nowrap;margin-left:auto;flex-shrink:0;}
+@media(max-width:768px){.bar{display:none;}}
