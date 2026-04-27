@@ -20,7 +20,7 @@
 /* Canvas wrapper takes ALL remaining space */
 .canvasWrap {
   flex: 1;
-  min-height: 0;
+  min-height: 200px;
   overflow: hidden;
   background: #09090b;
   position: relative;

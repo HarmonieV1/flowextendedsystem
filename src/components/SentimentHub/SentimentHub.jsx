@@ -178,6 +178,27 @@ export function SentimentHub() {
           </div>
         </div>
       )}
+      {/* Smart Money Score */}
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+          <span className={styles.cardTitle}>🎯 Smart Money Score</span>
+          <span className={styles.cardVal} style={{color:scoreColor,fontSize:16,fontWeight:800}}>{score}/100</span>
+        </div>
+        <div className={styles.scoreMeter}>
+          <div className={styles.meterTrack}>
+            <div className={styles.meterFill} style={{width:score+'%',background:scoreColor}}/>
+          </div>
+          <div className={styles.meterLabels}>
+            <span style={{color:'#ef4444'}}>Peur extrême</span>
+            <span>Neutre</span>
+            <span style={{color:'#22c55e'}}>Avidité</span>
+          </div>
+        </div>
+        <div style={{fontSize:11,color:'var(--txt3)',marginTop:8,lineHeight:1.6}}>
+          Score composite: F&G ({fgVal??'—'}) · L/S Ratio · Funding ({fundRate!==null?(fundRate>=0?'+':'')+fundRate.toFixed(4)+'%':'—'})
+        </div>
+      </div>
+
       <div className={styles.footer}>Alternative.me · Binance Futures · Polymarket · Refresh 5min</div>
     </div>
   )

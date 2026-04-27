@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { MarketScanner } from '../MarketScanner/MarketScanner'
 import { PatternScanner } from '../PatternScanner/PatternScanner'
+import { HarmonicScanner } from '../HarmonicScanner/HarmonicScanner'
+import { MultiAccount } from '../MultiAccount/MultiAccount'
+import { NewsTracker } from '../NewsTracker/NewsTracker'
 import { LiquidationMap } from '../LiquidationMap/LiquidationMap'
 import { DeltaFlow } from '../DeltaFlow/DeltaFlow'
 import { FundingRates } from '../FundingRates/FundingRates'
@@ -23,7 +26,9 @@ const GROUPS = [
     tabs: [
       { id:'scanner',  icon:'🔍', label:'Scanner'    },
       { id:'patterns', icon:'🎯', label:'Patterns'    },
+      { id:'harmonic', icon:'🦋', label:'Harmonics'   },
       { id:'sentiment',icon:'🧠', label:'Sentiment'   },
+      { id:'news',     icon:'📰', label:'News'        },
     ]
   },
   {
@@ -47,6 +52,7 @@ const GROUPS = [
     label: '🔐 On-Chain',
     tabs: [
       { id:'insider',     icon:'🕵️', label:'Insiders'    },
+      { id:'multiaccount',icon:'👛', label:'Multi-Wallet' },
       { id:'unlock',      icon:'🔓', label:'Unlocks'      },
       { id:'flowdetect',  icon:'⚡', label:'Flow Detect'  },
     ]
@@ -92,7 +98,9 @@ export function MarketIntel() {
       <div className={styles.content}>
         {tab === 'scanner'  && <MarketScanner />}
         {tab === 'patterns' && <PatternScanner />}
+        {tab === 'harmonic' && <HarmonicScanner />}
         {tab === 'sentiment'&& <SentimentHub />}
+        {tab === 'news'      && <NewsTracker />}
         {tab === 'heatmap'  && <OrderBookHeatmap />}
         {tab === 'aggbook'  && <AggregatedBook />}
         {tab === 'radar'    && <LiquidityRadar />}
@@ -101,6 +109,7 @@ export function MarketIntel() {
         {tab === 'options'  && <OptionsFlow />}
         {tab === 'liqmap'  && <LiquidationMap />}
         {tab === 'insider'  && <InsiderTracker />}
+        {tab === 'multiaccount' && <MultiAccount />}
         {tab === 'unlock'   && <TokenUnlock />}
         {tab === 'flowdetect' && <FlowDetector />}
       </div>

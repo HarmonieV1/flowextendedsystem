@@ -24,6 +24,8 @@ import { DeltaFlow } from './components/DeltaFlow/DeltaFlow'
 import { FundingRates } from './components/FundingRates/FundingRates'
 import { OptionsFlow } from './components/OptionsFlow/OptionsFlow'
 // New intel components are imported via MarketIntel
+import { HarmonicScanner } from './components/HarmonicScanner/HarmonicScanner'
+import { NewsTracker } from './components/NewsTracker/NewsTracker'
 import { LiquidationMap } from './components/LiquidationMap/LiquidationMap'
 import { MarketIntel } from './components/MarketIntel/MarketIntel'
 import { PatternScanner } from './components/PatternScanner/PatternScanner'

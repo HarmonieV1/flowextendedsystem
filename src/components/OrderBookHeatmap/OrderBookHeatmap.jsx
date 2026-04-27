@@ -23,8 +23,8 @@ export function OrderBookHeatmap() {
 
     // Resize canvas to container
     const rect = wrap.getBoundingClientRect()
-    const W = rect.width || 600
-    const H = rect.height || 300
+    const W = wrap.offsetWidth || wrap.clientWidth || 600
+    const H = wrap.offsetHeight || wrap.clientHeight || 280
     if (canvas.width !== W || canvas.height !== H) {
       canvas.width  = W
       canvas.height = H

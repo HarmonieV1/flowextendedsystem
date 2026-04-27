@@ -47,8 +47,10 @@
 .content { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column; }
 
 @media (max-width:768px) {
-  .group  { padding:6px 12px; font-size:10px; }
-  .tab    { padding:7px 12px; }
-  .tabLabel { display:none; }
-  .tabIcon  { font-size:17px; }
+  .group  { padding:6px 10px; font-size:10px; font-weight:600; }
+  .tab    { padding:6px 10px; }
+  .tabLabel { font-size:9px; }
+  .tabIcon  { font-size:14px; }
+  .groups { -webkit-overflow-scrolling: touch; }
+  .tabs   { -webkit-overflow-scrolling: touch; }
 }

@@ -72,3 +72,9 @@
 .footer { padding:6px 14px;font-size:9px;color:var(--txt3);border-top:1px solid var(--brd);flex-shrink:0;text-align:center; }
 
 @media (max-width:768px) { .kbBar { display:none; } .form { padding:10px;gap:9px; } }
+
+/* dYdX platform color */
+.platDydx { border-color:#6966ff;color:#6966ff;background:rgba(105,102,255,.1); }
+
+.strip { padding:5px 14px;background:rgba(105,102,255,.05);border-bottom:1px solid var(--brd);flex-shrink:0; }
+.stripText { font-size:10px;color:var(--txt3); }

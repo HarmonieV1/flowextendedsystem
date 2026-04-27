@@ -1,3 +1,4 @@
+import { triggerAlert, requestNotifPermission } from '../../lib/alertSound'
 import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../../store'
 import { fmtPx } from '../../lib/format'
@@ -40,9 +41,7 @@ export function PriceAlerts() {
                || (a.condition === 'below' && lastPx <= a.price && prev > a.price)
       if (hit) {
         newTriggered.push(a)
-        if (hasNotif && Notification.permission === 'granted') {
-          new Notification('⚡ FXSEDGE Alert', { body: `${a.pair}: ${a.condition === 'above' ? '↑' : '↓'} ${fmtPx(a.price)}` })
-        }
+        triggerAlert(a.pair, fmtPx(a.price), a.condition)
       } else { remaining.push(a) }
     })
     if (newTriggered.length > 0) {
@@ -68,6 +67,10 @@ export function PriceAlerts() {
 
   const pairAlerts = alerts.filter(a => a.pair === pair)
   const otherAlerts = alerts.filter(a => a.pair !== pair)
+
+  const enableNotifs = async () => {
+    await requestNotifPermission()
+  }
 
   return (
     <div className={styles.wrap}>
