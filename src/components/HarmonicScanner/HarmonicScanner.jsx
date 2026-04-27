@@ -1,90 +1,225 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useStore } from '../../store'
-import { fmtPx, fmt } from '../../lib/format'
+import { fmtPx } from '../../lib/format'
 import styles from './HarmonicScanner.module.css'
 
-// Fibonacci ratios for harmonic patterns
-const RATIOS = {
-  GARTLEY:   { XA:0.618, AB:[0.382,0.500], BC:[0.382,0.886], CD:[1.270,1.618], name:'Gartley',   color:'#7c3aed', bullish:true },
-  BAT:       { XA:0.500, AB:[0.382,0.500], BC:[0.382,0.886], CD:[1.618,2.618], name:'Bat',        color:'#2563eb', bullish:true },
-  BUTTERFLY: { XA:0.786, AB:[0.382,0.500], BC:[0.382,0.886], CD:[1.618,2.618], name:'Butterfly',  color:'#db2777', bullish:false },
-  CRAB:      { XA:0.618, AB:[0.382,0.618], BC:[0.382,0.886], CD:[2.618,3.618], name:'Crab',       color:'#dc2626', bullish:false },
-  CYPHER:    { XA:0.382, AB:[0.382,0.618], BC:[1.130,1.414], CD:[0.786,0.786], name:'Cypher',     color:'#059669', bullish:true },
-  SHARK:     { XA:0.886, AB:[1.130,1.618], BC:[1.130,1.618], CD:[0.886,0.886], name:'Shark',      color:'#d97706', bullish:false },
+// ── Fibonacci Ratios ──────────────────────────────────────────────────────────
+const FIB = {
+  '0.236':0.236,'0.382':0.382,'0.500':0.500,'0.618':0.618,
+  '0.707':0.707,'0.786':0.786,'0.886':0.886,'1.000':1.000,
+  '1.130':1.130,'1.272':1.272,'1.414':1.414,'1.618':1.618,
+  '2.000':2.000,'2.240':2.240,'2.618':2.618,'3.618':3.618,
 }
 
-function withinRange(val, [lo, hi], tolerance = 0.08) {
-  return val >= lo * (1-tolerance) && val <= hi * (1+tolerance)
+// Tolerance for ratio matching
+const TOL = 0.06
+
+function near(val, target, tol = TOL) {
+  return Math.abs(val - target) / target <= tol
+}
+function inRange(val, lo, hi, tol = TOL) {
+  return val >= lo * (1 - tol) && val <= hi * (1 + tol)
 }
 
-function fibRatio(a, b) {
-  return Math.abs(a - b)
-}
+// ── Pattern Definitions ───────────────────────────────────────────────────────
+const PATTERNS = [
+  {
+    name: 'Gartley',
+    color: '#7c3aed',
+    emoji: '🔮',
+    desc: 'Pattern classique de Gartley — retournement haute probabilité',
+    check: (r) =>
+      near(r.XAB, 0.618) &&
+      inRange(r.ABC, 0.382, 0.886) &&
+      inRange(r.BCD, 1.272, 1.618) &&
+      near(r.XAD, 0.786),
+  },
+  {
+    name: 'Bat',
+    color: '#2563eb',
+    emoji: '🦇',
+    desc: 'Bat pattern — PRZ proche du 0.886 XA retracement',
+    check: (r) =>
+      inRange(r.XAB, 0.382, 0.500) &&
+      inRange(r.ABC, 0.382, 0.886) &&
+      inRange(r.BCD, 1.618, 2.618) &&
+      near(r.XAD, 0.886),
+  },
+  {
+    name: 'Butterfly',
+    color: '#db2777',
+    emoji: '🦋',
+    desc: 'Butterfly — extension au-delà du point X, fort signal de retournement',
+    check: (r) =>
+      near(r.XAB, 0.786) &&
+      inRange(r.ABC, 0.382, 0.886) &&
+      inRange(r.BCD, 1.618, 2.618) &&
+      inRange(r.XAD, 1.270, 1.618),
+  },
+  {
+    name: 'Crab',
+    color: '#dc2626',
+    emoji: '🦀',
+    desc: 'Crab — extension extrême 1.618 XA, pattern rare et précis',
+    check: (r) =>
+      inRange(r.XAB, 0.382, 0.618) &&
+      inRange(r.ABC, 0.382, 0.886) &&
+      inRange(r.BCD, 2.618, 3.618) &&
+      near(r.XAD, 1.618),
+  },
+  {
+    name: 'Deep Crab',
+    color: '#991b1b',
+    emoji: '🦞',
+    desc: 'Deep Crab — variante avec retracement XAB plus profond',
+    check: (r) =>
+      near(r.XAB, 0.886) &&
+      inRange(r.ABC, 0.382, 0.886) &&
+      inRange(r.BCD, 2.000, 3.618) &&
+      near(r.XAD, 1.618),
+  },
+  {
+    name: 'Cypher',
+    color: '#059669',
+    emoji: '⚙️',
+    desc: 'Cypher — pattern moderne, retracement D au 0.786 XC',
+    check: (r) =>
+      inRange(r.XAB, 0.382, 0.618) &&
+      inRange(r.ABC, 1.130, 1.414) &&
+      inRange(r.XCD, 1.272, 2.000) &&
+      near(r.XAD, 0.786),
+  },
+  {
+    name: 'Shark',
+    color: '#d97706',
+    emoji: '🦈',
+    desc: 'Shark — pattern 5-0, structure unique à confirmation rapide',
+    check: (r) =>
+      inRange(r.XAB, 0.446, 0.618) &&
+      inRange(r.ABC, 1.130, 1.618) &&
+      inRange(r.BCD, 1.618, 2.240) &&
+      near(r.XAD, 0.886),
+  },
+  {
+    name: '5-0',
+    color: '#0891b2',
+    emoji: '5️⃣',
+    desc: '5-0 — continuation pattern, AB = CD requis',
+    check: (r) =>
+      inRange(r.XAB, 1.130, 1.618) &&
+      inRange(r.ABC, 1.618, 2.240) &&
+      near(r.BCD, 0.500) &&
+      near(r.XAD, 0.500),
+  },
+  {
+    name: 'AB=CD',
+    color: '#16a34a',
+    emoji: '🔁',
+    desc: 'AB=CD — pattern harmonique de base, legs symétriques',
+    check: (r) =>
+      inRange(r.ABC, 0.382, 0.886) &&
+      inRange(r.BCD, 1.130, 2.618) &&
+      near(r.ABCD_ratio, 1.000, 0.08),
+  },
+  {
+    name: 'Three Drives',
+    color: '#7c3aed',
+    emoji: '3️⃣',
+    desc: 'Three Drives — 3 extensions symétriques, épuisement de tendance',
+    check: (r) =>
+      inRange(r.ABC, 0.618, 0.618) &&
+      inRange(r.BCD, 1.272, 1.272) &&
+      near(r.ABCD_ratio, 1.000, 0.1),
+  },
+]
 
-function detectHarmonics(candles) {
-  const found = []
-  const n = candles.length
-  if (n < 20) return found
-
-  // Find swing highs and lows
-  const swings = []
-  for (let i = 2; i < n-2; i++) {
-    const isHigh = candles[i].h > candles[i-1].h && candles[i].h > candles[i-2].h &&
-                   candles[i].h > candles[i+1].h && candles[i].h > candles[i+2].h
-    const isLow  = candles[i].l < candles[i-1].l && candles[i].l < candles[i-2].l &&
-                   candles[i].l < candles[i+1].l && candles[i].l < candles[i+2].l
-    if (isHigh) swings.push({ i, price: candles[i].h, type: 'H' })
-    if (isLow)  swings.push({ i, price: candles[i].l, type: 'L' })
+function calcRatios(X, A, B, C, D) {
+  const XA = Math.abs(A - X)
+  const AB = Math.abs(B - A)
+  const BC = Math.abs(C - B)
+  const CD = Math.abs(D - C)
+  const XD = Math.abs(D - X)
+  const XC = Math.abs(C - X)
+  return {
+    XAB: XA > 0 ? AB / XA : 0,
+    ABC: AB > 0 ? BC / AB : 0,
+    BCD: BC > 0 ? CD / BC : 0,
+    XAD: XA > 0 ? XD / XA : 0,
+    XCD: XC > 0 ? CD / XC : 0,
+    ABCD_ratio: AB > 0 ? CD / AB : 0,
+    XA, AB, BC, CD,
   }
+}
 
-  // Need at least 5 points (X, A, B, C, D) - try all combinations
-  for (let xi = 0; xi < swings.length - 4; xi++) {
-    for (let ai = xi+1; ai < swings.length - 3; ai++) {
-      if (swings[ai].type === swings[xi].type) continue // alternating
-      for (let bi = ai+1; bi < swings.length - 2; bi++) {
-        if (swings[bi].type === swings[ai].type) continue
-        for (let ci = bi+1; ci < swings.length - 1; ci++) {
-          if (swings[ci].type === swings[bi].type) continue
-          for (let di = ci+1; di < swings.length; di++) {
-            if (swings[di].type === swings[ci].type) continue
+function findSwings(candles, minDist = 3) {
+  const swings = []
+  const n = candles.length
+  for (let i = minDist; i < n - minDist; i++) {
+    const window = candles.slice(i - minDist, i + minDist + 1)
+    const isHigh = candles[i].h === Math.max(...window.map(c => c.h))
+    const isLow  = candles[i].l === Math.min(...window.map(c => c.l))
+    if (isHigh && (!swings.length || swings[swings.length-1].type !== 'H'))
+      swings.push({ idx: i, price: candles[i].h, type: 'H' })
+    else if (isLow && (!swings.length || swings[swings.length-1].type !== 'L'))
+      swings.push({ idx: i, price: candles[i].l, type: 'L' })
+  }
+  return swings
+}
 
-            const X = swings[xi].price, A = swings[ai].price
-            const B = swings[bi].price, C = swings[ci].price, D = swings[di].price
+function detectHarmonics(candles, swings) {
+  const results = []
+  const S = swings
 
-            const XA = fibRatio(X, A)
-            const AB = fibRatio(A, B) / XA
-            const BC = fibRatio(B, C) / fibRatio(A, B)
-            const CD = fibRatio(C, D) / fibRatio(B, C)
-            const XA_ret = fibRatio(A, B) / XA
+  // Need alternating X A B C D
+  for (let xi = 0; xi < S.length - 4; xi++) {
+    for (let ai = xi + 1; ai < S.length - 3; ai++) {
+      if (S[ai].type === S[xi].type) continue
+      for (let bi = ai + 1; bi < S.length - 2; bi++) {
+        if (S[bi].type === S[ai].type) continue
+        for (let ci = bi + 1; ci < S.length - 1; ci++) {
+          if (S[ci].type === S[bi].type) continue
+          for (let di = ci + 1; di < S.length; di++) {
+            if (S[di].type === S[ci].type) continue
 
-            // Test each pattern
-            for (const [key, pat] of Object.entries(RATIOS)) {
-              if (withinRange(XA_ret, [pat.XA*0.9, pat.XA*1.1]) &&
-                  withinRange(AB, pat.AB) &&
-                  withinRange(BC, pat.BC) &&
-                  withinRange(CD, pat.CD)) {
+            const X = S[xi].price, A = S[ai].price
+            const B = S[bi].price, C = S[ci].price, D = S[di].price
 
-                const isBull = swings[xi].type === 'H' ? false : true
-                const prz    = D // Potential Reversal Zone
+            const ratios = calcRatios(X, A, B, C, D)
 
-                // Target projection
-                const target1 = isBull ? D + (A - X) * 0.382 : D - (X - A) * 0.382
-                const target2 = isBull ? D + (A - X) * 0.618 : D - (X - A) * 0.618
-                const stopLoss = isBull ? D * 0.985 : D * 1.015
+            for (const pat of PATTERNS) {
+              if (pat.check(ratios)) {
+                const isBull = S[xi].type === 'H'
+                const prz    = D
+                // Targets based on Fibonacci projections from D
+                const XA     = Math.abs(A - X)
+                const t1 = isBull ? D + XA * 0.382 : D - XA * 0.382
+                const t2 = isBull ? D + XA * 0.618 : D - XA * 0.618
+                const sl = isBull ? D - XA * 0.236 : D + XA * 0.236
 
-                found.push({
+                // Quality score based on ratio precision
+                const precision = 1 - (
+                  Math.abs(ratios.XAB - 0.618) +
+                  Math.abs(ratios.ABC - 0.618) +
+                  Math.abs(ratios.BCD - 1.618)
+                ) / 3
+                const conf = Math.min(94, Math.round(72 + precision * 22))
+
+                results.push({
                   pattern: pat.name,
-                  type:    isBull ? 'bullish' : 'bearish',
                   color:   pat.color,
+                  emoji:   pat.emoji,
+                  desc:    pat.desc,
+                  isBull,
+                  type:    isBull ? 'bullish' : 'bearish',
                   points:  { X, A, B, C, D,
-                    Xi: swings[xi].i, Ai: swings[ai].i,
-                    Bi: swings[bi].i, Ci: swings[ci].i,
-                    Di: swings[di].i },
-                  prz, target1, target2, stopLoss,
-                  ratios: { XA: XA_ret.toFixed(3), AB: AB.toFixed(3), BC: BC.toFixed(3), CD: CD.toFixed(3) },
-                  conf: Math.round(75 + Math.random() * 20),
+                    Xi: S[xi].idx, Ai: S[ai].idx,
+                    Bi: S[bi].idx, Ci: S[ci].idx,
+                    Di: S[di].idx },
+                  ratios,
+                  prz, target1: t1, target2: t2, stopLoss: sl,
+                  conf,
+                  rr: Math.abs(t1 - D) / Math.abs(sl - D),
                 })
-                break // one pattern per set of points
               }
             }
           }
@@ -93,280 +228,418 @@ function detectHarmonics(candles) {
     }
   }
 
-  return found.slice(0, 8) // max 8 results
+  // Deduplicate by pattern name, keep highest conf
+  const seen = {}
+  return results
+    .sort((a, b) => b.conf - a.conf)
+    .filter(r => { if (seen[r.pattern]) return false; seen[r.pattern] = true; return true })
+    .slice(0, 10)
 }
 
-const PAIRS_TO_SCAN = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','ARBUSDT','LINKUSDT']
-const TFS = ['1h','4h','1d']
+// ── Chart Drawing ─────────────────────────────────────────────────────────────
+function drawPattern(canvas, result, candles) {
+  if (!canvas || !result) return
+  const W = canvas.offsetWidth || 520
+  const H = 300
+  canvas.width  = W
+  canvas.height = H
+
+  const ctx = canvas.getContext('2d')
+
+  // Background
+  ctx.fillStyle = '#0a0a0d'
+  ctx.fillRect(0, 0, W, H)
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,.04)'
+  ctx.lineWidth = 1
+  for (let i = 1; i < 8; i++) {
+    const x = W * i / 8
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H - 20); ctx.stroke()
+  }
+  for (let i = 1; i < 5; i++) {
+    const y = (H - 20) * i / 5
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke()
+  }
+
+  const { points, color, isBull, prz, target1, target2, stopLoss } = result
+  const { X, A, B, C, D, Xi, Ai, Bi, Ci, Di } = points
+
+  const padL = 5, padR = 90, padT = 20, padB = 30
+  const chartW = W - padL - padR
+  const chartH = H - padT - padB
+
+  // Price range with padding
+  const allPrices = [X, A, B, C, D, target2 || target1, stopLoss]
+    .filter(Boolean)
+  let minP = Math.min(...allPrices)
+  let maxP = Math.max(...allPrices)
+  const rangeP = maxP - minP
+  minP -= rangeP * 0.08
+  maxP += rangeP * 0.08
+
+  // Index range
+  const idxStart = Math.max(0, Xi - 3)
+  const idxEnd   = Math.min(candles.length - 1, Di + 12)
+  const rangeI   = idxEnd - idxStart
+
+  const px = (price) => padT + chartH * (1 - (price - minP) / (maxP - minP))
+  const ix  = (idx)  => padL + chartW * ((idx - idxStart) / rangeI)
+
+  // Draw candles
+  const cw = Math.max(2, chartW / rangeI * 0.7)
+  for (let i = idxStart; i <= idxEnd; i++) {
+    const c = candles[i]
+    if (!c) continue
+    const x  = ix(i)
+    const yo = px(c.o), yc = px(c.c), yh = px(c.h), yl = px(c.l)
+    const bull = c.c >= c.o
+    const alpha = 0.45
+
+    // Wick
+    ctx.strokeStyle = bull ? `rgba(0,229,160,${alpha})` : `rgba(255,59,92,${alpha})`
+    ctx.lineWidth = 1
+    ctx.beginPath(); ctx.moveTo(x, yh); ctx.lineTo(x, yl); ctx.stroke()
+
+    // Body
+    ctx.fillStyle = bull ? `rgba(0,229,160,${alpha})` : `rgba(255,59,92,${alpha})`
+    const by = Math.min(yo, yc), bh = Math.max(1, Math.abs(yc - yo))
+    ctx.fillRect(x - cw/2, by, cw, bh)
+  }
+
+  // ── PRZ Zone (shaded) ──
+  const przY = px(prz)
+  ctx.fillStyle = color + '18'
+  ctx.fillRect(ix(Di) - 8, przY - 12, W - ix(Di) + 8, 24)
+  ctx.strokeStyle = color + '55'
+  ctx.lineWidth = 1
+  ctx.setLineDash([2, 4])
+  ctx.beginPath()
+  ctx.moveTo(ix(Di) - 8, przY)
+  ctx.lineTo(W - padR + 8, przY)
+  ctx.stroke()
+  ctx.setLineDash([])
+
+  // ── Target lines ──
+  const drawTarget = (price, label, clr) => {
+    const y = px(price)
+    ctx.strokeStyle = clr
+    ctx.lineWidth = 1
+    ctx.setLineDash([4, 4])
+    ctx.beginPath()
+    ctx.moveTo(ix(Di), y)
+    ctx.lineTo(W - padR + 40, y)
+    ctx.stroke()
+    ctx.setLineDash([])
+    // Label background
+    ctx.fillStyle = clr
+    ctx.fillRect(W - padR + 42, y - 8, padR - 46, 16)
+    ctx.fillStyle = '#000'
+    ctx.font = 'bold 8px monospace'
+    ctx.textAlign = 'center'
+    ctx.fillText(label, W - padR + 42 + (padR - 46) / 2, y + 3)
+    // Price
+    ctx.fillStyle = clr
+    ctx.font = '8px monospace'
+    ctx.textAlign = 'left'
+    ctx.fillText(fmtPx(price), W - padR + 44, y - 10)
+  }
+
+  if (target2) drawTarget(target2, 'TP2', '#16a34a')
+  if (target1) drawTarget(target1, 'TP1', '#22c55e')
+  if (stopLoss) drawTarget(stopLoss, ' SL ', '#ef4444')
+
+  // ── Pattern lines XABCD ──
+  const pts = [
+    { l:'X', p:X, i:Xi },
+    { l:'A', p:A, i:Ai },
+    { l:'B', p:B, i:Bi },
+    { l:'C', p:C, i:Ci },
+    { l:'D', p:D, i:Di },
+  ]
+
+  // Shadow glow
+  ctx.shadowColor = color
+  ctx.shadowBlur  = 6
+
+  // Lines
+  ctx.strokeStyle = color
+  ctx.lineWidth   = 2.5
+  ctx.lineJoin    = 'round'
+  ctx.setLineDash([])
+  ctx.beginPath()
+  pts.forEach((pt, j) => {
+    const x = ix(pt.i), y = px(pt.p)
+    j === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+  })
+  ctx.stroke()
+
+  // XD diagonal (pattern boundary)
+  ctx.strokeStyle = color + '30'
+  ctx.lineWidth   = 1
+  ctx.setLineDash([3, 5])
+  ctx.shadowBlur  = 0
+  ctx.beginPath()
+  ctx.moveTo(ix(Xi), px(X))
+  ctx.lineTo(ix(Di), px(D))
+  ctx.stroke()
+  ctx.setLineDash([])
+
+  // ── Point Labels ──
+  ctx.shadowBlur = 0
+  pts.forEach((pt, j) => {
+    const x = ix(pt.i), y = px(pt.p)
+    const above = y > H / 2
+
+    // Circle
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.arc(x, y, 10, 0, Math.PI * 2)
+    ctx.fill()
+
+    // Border
+    ctx.strokeStyle = '#000'
+    ctx.lineWidth   = 1.5
+    ctx.beginPath()
+    ctx.arc(x, y, 10, 0, Math.PI * 2)
+    ctx.stroke()
+
+    // Letter
+    ctx.fillStyle   = '#fff'
+    ctx.font        = 'bold 10px monospace'
+    ctx.textAlign   = 'center'
+    ctx.fillText(pt.l, x, y + 4)
+
+    // Price tag
+    ctx.fillStyle   = 'rgba(255,255,255,.65)'
+    ctx.font        = '8px monospace'
+    ctx.fillText(fmtPx(pt.p), x, above ? y - 14 : y + 22)
+  })
+
+  // ── Price axis ──
+  ctx.fillStyle = 'rgba(255,255,255,.3)'
+  ctx.font      = '8px monospace'
+  ctx.textAlign = 'right'
+  for (let i = 0; i <= 4; i++) {
+    const p = minP + (maxP - minP) * (i / 4)
+    const y = px(p)
+    ctx.fillText(fmtPx(p), W - padR + 36, y + 3)
+  }
+
+  // ── Pattern label ──
+  ctx.fillStyle = color
+  ctx.font      = 'bold 11px monospace'
+  ctx.textAlign = 'left'
+  ctx.fillText(`${result.emoji} ${result.pattern}  ${result.type === 'bullish' ? '↑ Bullish' : '↓ Bearish'}  ${result.conf}%`, padL + 8, padT + 14)
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
+const PAIRS   = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','ARBUSDT','LINKUSDT','AVAXUSDT']
+const TFS     = ['1h','4h','1d']
 
 export function HarmonicScanner() {
-  const setPair  = useStore(s => s.setPair)
-  const lastPx   = useStore(s => s.lastPx)
+  const setPair = useStore(s => s.setPair)
+
   const [results, setResults]   = useState([])
   const [scanning, setScanning] = useState(false)
   const [tf, setTf]             = useState('4h')
   const [progress, setProgress] = useState(0)
   const [selected, setSelected] = useState(null)
+  const [filter, setFilter]     = useState('all')
   const canvasRef = useRef(null)
 
   const scan = async () => {
     setScanning(true); setResults([]); setProgress(0); setSelected(null)
-    const found = []
-    for (let i = 0; i < PAIRS_TO_SCAN.length; i++) {
-      const pair = PAIRS_TO_SCAN[i]
-      setProgress(Math.round(i/PAIRS_TO_SCAN.length*100))
+    const all = []
+
+    for (let i = 0; i < PAIRS.length; i++) {
+      setProgress(Math.round(i / PAIRS.length * 100))
       try {
-        const r = await fetch(`https://api.binance.com/api/v3/klines?symbol=${pair}&interval=${tf}&limit=150`)
+        const r = await fetch(
+          `https://api.binance.com/api/v3/klines?symbol=${PAIRS[i]}&interval=${tf}&limit=200`
+        )
         const data = await r.json()
         if (!Array.isArray(data)) continue
-        const candles = data.map(d=>({ t:+d[0], o:+d[1], h:+d[2], l:+d[3], c:+d[4] }))
-        const patterns = detectHarmonics(candles)
-        patterns.forEach(p => found.push({ ...p, pair, lastPrice: candles[candles.length-1].c, candles }))
+        const candles = data.map(d => ({
+          t:+d[0], o:+d[1], h:+d[2], l:+d[3], c:+d[4]
+        }))
+        const swings   = findSwings(candles, 3)
+        const patterns = detectHarmonics(candles, swings)
+        patterns.forEach(p => all.push({
+          ...p, pair: PAIRS[i], lastPrice: candles[candles.length - 1].c, candles
+        }))
       } catch(_) {}
     }
-    setResults(found)
+
+    all.sort((a, b) => b.conf - a.conf)
+    setResults(all)
     setProgress(100)
     setScanning(false)
   }
 
-  // Draw harmonic pattern on canvas
+  // Redraw when selection changes
   useEffect(() => {
-    if (!selected) return
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const W = canvas.offsetWidth || 500
-    const H = 280
-    canvas.width  = W
-    canvas.height = H
-
-    const ctx = canvas.getContext('2d')
-    ctx.fillStyle = '#0d0d10'
-    ctx.fillRect(0, 0, W, H)
-
-    const { points, type, color, prz, target1, target2, stopLoss, ratios, candles } = selected
-    const { X, A, B, C, D, Xi, Ai, Bi, Ci, Di } = points
-
-    // Price range
-    const allP = [X, A, B, C, D, target2, stopLoss].filter(Boolean)
-    const minP = Math.min(...allP) * 0.995
-    const maxP = Math.max(...allP) * 1.005
-    const priceToY = p => H - ((p - minP) / (maxP - minP)) * (H - 30) - 15
-    const idxToX   = i => {
-      const startI = Math.max(0, Xi - 5)
-      const endI   = Di + 10
-      return ((i - startI) / (endI - startI)) * W
-    }
-
-    // Draw candles (simplified)
-    if (candles) {
-      const startI = Math.max(0, Xi - 5)
-      const endI   = Math.min(candles.length-1, Di + 10)
-      const cw     = W / (endI - startI)
-      for (let i = startI; i <= endI; i++) {
-        const c = candles[i]
-        const x = idxToX(i)
-        const isBull = c.c >= c.o
-        ctx.strokeStyle = isBull ? 'rgba(0,229,160,.4)' : 'rgba(255,59,92,.4)'
-        ctx.lineWidth = 1
-        // Wick
-        ctx.beginPath()
-        ctx.moveTo(x, priceToY(c.h))
-        ctx.lineTo(x, priceToY(c.l))
-        ctx.stroke()
-        // Body
-        const y1 = priceToY(Math.max(c.o,c.c))
-        const y2 = priceToY(Math.min(c.o,c.c))
-        ctx.fillStyle = isBull ? 'rgba(0,229,160,.35)' : 'rgba(255,59,92,.35)'
-        ctx.fillRect(x - cw/2 + 1, y1, cw - 2, Math.max(1, y2-y1))
-      }
-    }
-
-    // Draw pattern lines XABCD
-    const pts = [
-      { label:'X', price:X, idx:Xi },
-      { label:'A', price:A, idx:Ai },
-      { label:'B', price:B, idx:Bi },
-      { label:'C', price:C, idx:Ci },
-      { label:'D', price:D, idx:Di },
-    ]
-
-    ctx.strokeStyle = color
-    ctx.lineWidth = 2
-    ctx.setLineDash([])
-    ctx.beginPath()
-    pts.forEach((pt, i) => {
-      const x = idxToX(pt.idx)
-      const y = priceToY(pt.price)
-      if (i === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
+    if (!selected || !canvasRef.current) return
+    // Wait for canvas to be in DOM
+    requestAnimationFrame(() => {
+      drawPattern(canvasRef.current, selected, selected.candles)
     })
-    ctx.stroke()
-
-    // Draw XD connecting line (pattern boundary)
-    ctx.strokeStyle = color + '44'
-    ctx.lineWidth = 1
-    ctx.setLineDash([4, 4])
-    ctx.beginPath()
-    ctx.moveTo(idxToX(Xi), priceToY(X))
-    ctx.lineTo(idxToX(Di), priceToY(D))
-    ctx.stroke()
-    ctx.setLineDash([])
-
-    // Draw targets
-    if (target1) {
-      ctx.strokeStyle = 'rgba(0,229,160,.6)'
-      ctx.lineWidth = 1
-      ctx.setLineDash([3, 3])
-      const ty = priceToY(target1)
-      ctx.beginPath()
-      ctx.moveTo(idxToX(Di), ty)
-      ctx.lineTo(W, ty)
-      ctx.stroke()
-      ctx.fillStyle = 'rgba(0,229,160,.8)'
-      ctx.font = '9px monospace'
-      ctx.textAlign = 'right'
-      ctx.fillText('TP1 ' + fmtPx(target1), W - 4, ty - 3)
-    }
-    if (target2) {
-      const ty2 = priceToY(target2)
-      ctx.strokeStyle = 'rgba(0,229,160,.4)'
-      ctx.beginPath()
-      ctx.moveTo(idxToX(Di), ty2)
-      ctx.lineTo(W, ty2)
-      ctx.stroke()
-      ctx.fillStyle = 'rgba(0,229,160,.6)'
-      ctx.fillText('TP2 ' + fmtPx(target2), W - 4, ty2 - 3)
-    }
-    if (stopLoss) {
-      const sy = priceToY(stopLoss)
-      ctx.strokeStyle = 'rgba(255,59,92,.6)'
-      ctx.beginPath()
-      ctx.moveTo(idxToX(Di), sy)
-      ctx.lineTo(W, sy)
-      ctx.stroke()
-      ctx.fillStyle = 'rgba(255,59,92,.8)'
-      ctx.textAlign = 'right'
-      ctx.fillText('SL ' + fmtPx(stopLoss), W - 4, sy - 3)
-    }
-    ctx.setLineDash([])
-
-    // Labels for each point
-    ctx.font = 'bold 11px monospace'
-    ctx.textAlign = 'center'
-    pts.forEach(pt => {
-      const x = idxToX(pt.idx)
-      const y = priceToY(pt.price)
-      // Background pill
-      ctx.fillStyle = color
-      ctx.beginPath()
-      ctx.arc(x, y, 8, 0, Math.PI*2)
-      ctx.fill()
-      ctx.fillStyle = '#fff'
-      ctx.fillText(pt.label, x, y + 4)
-      // Price label
-      ctx.fillStyle = 'rgba(255,255,255,.6)'
-      ctx.font = '8px monospace'
-      const above = y > H/2
-      ctx.fillText(fmtPx(pt.price), x, above ? y - 12 : y + 20)
-      ctx.font = 'bold 11px monospace'
-    })
-
-    // PRZ Zone
-    const przY = priceToY(prz)
-    ctx.fillStyle = color + '22'
-    ctx.fillRect(idxToX(Di) - 20, przY - 15, W - idxToX(Di) + 20, 30)
-    ctx.fillStyle = color
-    ctx.font = 'bold 10px monospace'
-    ctx.textAlign = 'left'
-    ctx.fillText('PRZ', idxToX(Di) + 4, przY + 4)
-
   }, [selected])
+
+  const handleSelect = (r) => {
+    setSelected(r)
+    setPair(r.pair)
+  }
+
+  const filtered = filter === 'all' ? results
+    : results.filter(r => r.type === filter)
 
   return (
     <div className={styles.wrap}>
+
+      {/* Header */}
       <div className={styles.header}>
         <span className={styles.title}>🦋 Harmonic Patterns</span>
         <div className={styles.controls}>
-          <div className={styles.tfRow}>{TFS.map(t=>(
-            <button key={t} className={styles.tfBtn+(tf===t?' '+styles.tfOn:'')} onClick={()=>setTf(t)}>{t}</button>
-          ))}</div>
+          <div className={styles.tfRow}>
+            {TFS.map(t => (
+              <button key={t}
+                className={styles.tfBtn + (tf === t ? ' ' + styles.tfOn : '')}
+                onClick={() => setTf(t)}
+              >{t}</button>
+            ))}
+          </div>
           <button className={styles.scanBtn} onClick={scan} disabled={scanning}>
-            {scanning ? progress+'%' : '⚡ Scanner'}
+            {scanning ? progress + '%' : '⚡ Scanner'}
           </button>
         </div>
       </div>
 
-      {scanning && <div className={styles.prog}><div className={styles.progFill} style={{width:progress+'%'}}/></div>}
+      {/* Progress */}
+      {scanning && (
+        <div className={styles.prog}>
+          <div className={styles.progFill} style={{ width: progress + '%' }}/>
+        </div>
+      )}
 
       {/* Pattern legend */}
       <div className={styles.legend}>
-        {Object.values(RATIOS).map(p=>(
-          <span key={p.name} className={styles.legItem} style={{borderColor:p.color,color:p.color}}>{p.name}</span>
+        {PATTERNS.map(p => (
+          <span key={p.name} className={styles.legItem}
+            style={{ borderColor: p.color + '88', color: p.color, background: p.color + '12' }}>
+            {p.emoji} {p.name}
+          </span>
         ))}
       </div>
 
+      {/* Chart projection */}
       {selected && (
-        <div className={styles.chart}>
-          <div className={styles.chartHeader}>
-            <span style={{color:selected.color,fontWeight:800}}>{selected.pattern}</span>
-            <span style={{color:selected.type==='bullish'?'var(--grn)':'var(--red)'}}>{selected.type==='bullish'?'↑ Bullish':'↓ Bearish'}</span>
-            <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--txt3)'}}>{selected.pair.replace('USDT','/USDT')}</span>
-            <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--txt3)'}}>Conf: {selected.conf}%</span>
-            <button className={styles.closeChart} onClick={()=>setSelected(null)}>✕</button>
+        <div className={styles.chartWrap}>
+          <div className={styles.chartTop}>
+            <div className={styles.chartInfo}>
+              <span className={styles.chartPat} style={{ color: selected.color }}>
+                {selected.emoji} {selected.pattern}
+              </span>
+              <span className={styles.chartDir}
+                style={{ color: selected.type === 'bullish' ? 'var(--grn)' : 'var(--red)' }}>
+                {selected.type === 'bullish' ? '↑ Bullish' : '↓ Bearish'}
+              </span>
+              <span className={styles.chartPair}>{selected.pair.replace('USDT', '/USDT')}</span>
+              <span className={styles.chartConf}>{selected.conf}% · R/R {selected.rr?.toFixed(1)}x</span>
+            </div>
+            <div className={styles.chartRatios}>
+              {Object.entries(selected.ratios)
+                .filter(([k]) => ['XAB','ABC','BCD','XAD'].includes(k))
+                .map(([k, v]) => (
+                  <span key={k} className={styles.ratio}>
+                    <span className={styles.ratioK}>{k}</span>
+                    {(+v).toFixed(3)}
+                  </span>
+                ))}
+            </div>
+            <button className={styles.closeBtn} onClick={() => setSelected(null)}>✕</button>
           </div>
+
           <canvas ref={canvasRef} className={styles.canvas}/>
-          <div className={styles.ratios}>
-            {Object.entries(selected.ratios).map(([k,v])=>(
-              <span key={k} className={styles.ratio}><span className={styles.ratioK}>{k}</span>{v}</span>
-            ))}
-            <span className={styles.ratio}><span className={styles.ratioK}>PRZ</span>{fmtPx(selected.prz)}</span>
-            <span className={styles.ratio} style={{color:'var(--grn)'}}><span className={styles.ratioK}>TP1</span>{fmtPx(selected.target1)}</span>
-            <span className={styles.ratio} style={{color:'var(--red)'}}><span className={styles.ratioK}>SL</span>{fmtPx(selected.stopLoss)}</span>
+
+          <div className={styles.chartFooter}>
+            <div className={styles.przInfo}>
+              <span style={{ color: selected.color }}>PRZ {fmtPx(selected.prz)}</span>
+              <span style={{ color: '#22c55e' }}>TP1 {fmtPx(selected.target1)}</span>
+              <span style={{ color: '#16a34a' }}>TP2 {fmtPx(selected.target2)}</span>
+              <span style={{ color: '#ef4444' }}>SL {fmtPx(selected.stopLoss)}</span>
+            </div>
+            <div className={styles.patDesc}>{selected.desc}</div>
           </div>
         </div>
       )}
 
+      {/* Empty state */}
       {!scanning && results.length === 0 && (
         <div className={styles.empty}>
-          <div style={{fontSize:40,marginBottom:8}}>🦋</div>
-          <div style={{fontSize:13,fontWeight:700,color:'var(--txt)'}}>6 patterns harmoniques détectables</div>
-          <div style={{fontSize:11,color:'var(--txt3)',lineHeight:1.7,marginTop:6,textAlign:'center'}}>
-            Gartley · Bat · Butterfly · Crab · Cypher · Shark<br/>
-            Cliquer sur un résultat affiche la projection sur le graphique
+          <div className={styles.emptyEmoji}>🦋</div>
+          <div className={styles.emptyTitle}>{PATTERNS.length} patterns harmoniques détectables</div>
+          <div className={styles.emptyList}>
+            {PATTERNS.map(p => (
+              <span key={p.name} style={{ color: p.color }}>{p.emoji} {p.name}</span>
+            ))}
           </div>
+          <div className={styles.emptyHint}>
+            Cliquer sur un résultat → projection graphique avec XABCD + PRZ + TP + SL
+          </div>
+        </div>
+      )}
+
+      {/* Filter + results */}
+      {results.length > 0 && (
+        <div className={styles.filterRow}>
+          {[['all','Tous'],['bullish','↑ Bullish'],['bearish','↓ Bearish']].map(([id, lbl]) => (
+            <button key={id}
+              className={styles.fBtn + (filter === id ? ' ' + styles.fOn : '')}
+              onClick={() => setFilter(id)}
+            >{lbl}</button>
+          ))}
+          <span className={styles.count}>{filtered.length} pattern{filtered.length > 1 ? 's' : ''}</span>
         </div>
       )}
 
       <div className={styles.list}>
-        {results.map((r, i) => (
+        {filtered.map((r, i) => (
           <div key={i}
-            className={styles.row + (selected === r ? ' '+styles.rowSel : '')}
-            onClick={() => { setSelected(r); setPair(r.pair) }}
+            className={styles.row + (selected === r ? ' ' + styles.rowSel : '')}
+            style={selected === r ? { borderLeft: '3px solid ' + r.color } : {}}
+            onClick={() => handleSelect(r)}
           >
             <div className={styles.rowL}>
-              <span className={styles.patIcon} style={{background:r.color+'22',color:r.color}}>🦋</span>
+              <div className={styles.patDot}
+                style={{ background: r.color + '22', color: r.color, border: '1px solid ' + r.color + '55' }}>
+                {r.emoji}
+              </div>
               <div>
-                <div className={styles.patName} style={{color:r.color}}>{r.pattern}</div>
-                <div className={styles.patPair}>{r.pair.replace('USDT','/USDT')} · {tf}</div>
+                <div className={styles.patName} style={{ color: r.color }}>{r.pattern}</div>
+                <div className={styles.patSub}>{r.pair.replace('USDT','/USDT')} · {tf}</div>
               </div>
             </div>
-            <div className={styles.rowR}>
-              <span className={styles.patType} style={{color:r.type==='bullish'?'var(--grn)':'var(--red)'}}>
-                {r.type==='bullish'?'↑ Bull':'↓ Bear'}
+            <div className={styles.rowMid}>
+              <span className={styles.patDir}
+                style={{ color: r.type === 'bullish' ? 'var(--grn)' : 'var(--red)' }}>
+                {r.type === 'bullish' ? '↑' : '↓'}
               </span>
-              <div className={styles.targets}>
-                <span style={{color:'var(--grn)',fontSize:10}}>TP {fmtPx(r.target1)}</span>
-                <span style={{color:'var(--red)',fontSize:10}}>SL {fmtPx(r.stopLoss)}</span>
+              <span className={styles.patRR}>R/R {r.rr?.toFixed(1)}x</span>
+            </div>
+            <div className={styles.rowR}>
+              <div className={styles.confBar}>
+                <div className={styles.confFill}
+                  style={{ width: r.conf + '%', background: r.color }}/>
               </div>
-              <span className={styles.conf}>{r.conf}%</span>
+              <span className={styles.confVal}>{r.conf}%</span>
             </div>
           </div>
         ))}
       </div>
 
       <div className={styles.footer}>
-        Algorithmes Fibonacci · {PAIRS_TO_SCAN.length} paires · Cliquer → projection sur graphique
+        Ratios Fibonacci · {PAIRS.length} paires · Binance · Cliquer = projection graphique
       </div>
     </div>
   )

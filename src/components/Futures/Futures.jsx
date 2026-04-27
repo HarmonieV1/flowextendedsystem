@@ -35,7 +35,7 @@ export function Futures({ onOpenWallet }) {
   const lastPx = useStore(s => s.lastPx)
   const base   = pair.replace('USDT','')
 
-  const [platform, setPlatform] = useState('dydx')
+  const [platform, setPlatform] = useState('bitunix')
   const [side, setSide]         = useState('long')
   const [orderType, setOType]   = useState('market')
   const [qty, setQty]           = useState('')
