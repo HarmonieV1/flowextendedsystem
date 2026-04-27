@@ -1,33 +1,31 @@
 import styles from './BottomNav.module.css'
 
-const NAV_ITEMS = [
-  { id: 'trade-Spot',    icon: '◎', label: 'Spot' },
-  { id: 'trade-Futures', icon: '⊡', label: 'Futures' },
-  { id: 'trade-Swap',   icon: '⇄', label: 'Swap' },
-  { id: 'multi',        icon: '⊞', label: 'Multi' },
-  { id: 'wallet',       icon: '👛', label: 'Portfolio' },
+const NAV = [
+  { view:'trade',   tab:'Futures', icon:'⚡',  label:'Futures'   },
+  { view:'trade',   tab:'Spot',    icon:'📊', label:'Spot'      },
+  { view:'intel',   tab:null,      icon:'📡', label:'Intel'     },
+  { view:'multi',   tab:null,      icon:'⊞',  label:'Multi'     },
+  { view:'wallet',  tab:null,      icon:'💼', label:'Portfolio' },
 ]
 
 export function BottomNav({ activeView, activeTab, onNavigate }) {
   return (
-    <div className={styles.bar}>
-      {NAV_ITEMS.map(item => {
-        const [v, t] = item.id.split('-')
-        const isActive = v === 'trade'
-          ? activeView === 'trade' && activeTab === t
-          : activeView === v
-
+    <nav className={styles.nav}>
+      {NAV.map(item => {
+        const isActive = item.tab
+          ? activeView === item.view && activeTab === item.tab
+          : activeView === item.view
         return (
-          <button
-            key={item.id}
-            className={`${styles.item} ${isActive ? styles.active : ''}`}
-            onClick={() => onNavigate(v, t)}
+          <button key={item.label}
+            className={styles.btn + (isActive ? ' ' + styles.active : '')}
+            onClick={() => onNavigate(item.view, item.tab)}
           >
+            {isActive && <span className={styles.bar}/>}
             <span className={styles.icon}>{item.icon}</span>
             <span className={styles.label}>{item.label}</span>
           </button>
         )
       })}
-    </div>
+    </nav>
   )
 }

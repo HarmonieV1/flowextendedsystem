@@ -9,10 +9,33 @@
   --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body,#root{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);font-family:var(--mono);font-size:11.5px}
+html,body{height:100%;overflow:hidden;background:var(--bg0);}#root{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);font-family:var(--mono);font-size:11.5px}
 button{cursor:pointer;font-family:var(--mono)}
 input[type=number]{-moz-appearance:textfield}
 input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+
+input,button,select,textarea{pointer-events:auto;touch-action:manipulation;}
+
+@keyframes slideIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+/* Light theme */
+[data-theme="light"] {
+  --bg0:  #f8f8f8;
+  --bg1:  #ffffff;
+  --bg2:  #f0f0f2;
+  --bg3:  #e5e5ea;
+  --bg4:  #d1d1d6;
+  --txt:  #09090b;
+  --txt2: #3f3f46;
+  --txt3: #71717a;
+  --brd:  #e4e4e7;
+  --brd2: #a1a1aa;
+  --grn:  #00b87a;
+  --grn2: rgba(0,184,122,.1);
+  --red:  #e53e3e;
+  --red2: rgba(229,62,62,.1);
+}
+[data-theme="light"] .root { background:#f8f8f8; }

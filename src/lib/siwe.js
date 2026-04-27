@@ -6,7 +6,7 @@ import { supabase } from './supabase'
 // Generates a SIWE message per EIP-4361
 function buildSiweMessage({ address, chainId, nonce, issuedAt }) {
   return [
-    `FXS Flow Extended System wants you to sign in with your Ethereum account:`,
+    `FXSEDGE wants you to sign in with your Ethereum account:`,
     address,
     ``,
     `Sign in to FXS — no password, no email, no KYC.`,

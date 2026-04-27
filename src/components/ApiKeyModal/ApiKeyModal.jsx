@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { saveApiKeys, testApiKeys, clearApiKeys } from '../../lib/bitunix'
+import { useStore } from '../../store'
 import styles from './ApiKeyModal.module.css'
 
 export function ApiKeyModal({ onClose, onSuccess }) {
@@ -23,12 +24,14 @@ export function ApiKeyModal({ onClose, onSuccess }) {
     if (result.ok) {
       setStep('success')
       onSuccess?.()
+      // Save connected state
+      useStore && window.dispatchEvent(new Event('fxs:apiConnected'))
     } else {
       clearApiKeys()
       setError(result.error?.includes('Invalid API') || result.error?.includes('-2014')
         ? 'Clé API invalide — vérifie que tu as bien copié les deux clés'
         : result.error?.includes('IP') || result.error?.includes('-2015')
-          ? 'Restriction IP active sur la clé — désactive la restriction IP dans Binance'
+          ? 'Restriction IP active sur la clé — désactive la restriction IP dans Bitunix'
           : result.error || 'Connexion échouée')
     }
   }
@@ -46,7 +49,7 @@ export function ApiKeyModal({ onClose, onSuccess }) {
 
             {/* Instructions */}
             <div className={styles.instructions}>
-              <div className={styles.instrTitle}>Comment créer une clé API Binance</div>
+              <div className={styles.instrTitle}>Comment créer une clé API Bitunix</div>
               <div className={styles.steps}>
                 <div className={styles.instrStep}>
                   <span className={styles.stepNum}>1</span>
@@ -128,7 +131,7 @@ export function ApiKeyModal({ onClose, onSuccess }) {
             <div className={styles.successTitle}>Bitunix connecté</div>
             <div className={styles.successSub}>
               Tes ordres passent maintenant directement sur Bitunix via ton compte.
-              Les fonds restent dans ton compte Bitunix — FXS ne touche jamais à tes actifs.
+              Les fonds restent dans ton compte Bitunix — FXSEDGE ne touche jamais à tes actifs.
             </div>
             <button className={styles.connectBtn} onClick={onClose}>Commencer à trader →</button>
           </div>

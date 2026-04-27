@@ -1,4 +1,4 @@
-.wrap{flex:1;overflow-y:auto;background:var(--bg0);scrollbar-width:thin;scrollbar-color:var(--bg4) transparent;}
+.wrap{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;background:var(--bg0);scrollbar-width:thin;scrollbar-color:var(--bg4) transparent;}
 .inner{padding:16px;display:flex;flex-direction:column;gap:10px;max-width:420px;margin:0 auto;}
 .chainRow{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--txt3);}
 .chainDot{width:5px;height:5px;border-radius:50%;background:var(--grn);box-shadow:0 0 4px var(--grn);flex-shrink:0;}

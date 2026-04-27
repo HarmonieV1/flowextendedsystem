@@ -1,4 +1,4 @@
-.bar{display:flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-bottom:1px solid rgba(0,229,160,.15);background:linear-gradient(90deg,rgba(0,229,160,.04) 0%,transparent 60%);overflow-x:auto;scrollbar-width:none;flex-shrink:0;}
+.bar{position:relative;display:flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-bottom:1px solid rgba(0,229,160,.15);background:linear-gradient(90deg,rgba(0,229,160,.04) 0%,transparent 60%);overflow-x:auto;scrollbar-width:none;flex-shrink:0;}
 .bar::-webkit-scrollbar{display:none;}
 .bestLabel{font-size:9px;color:var(--grn);font-weight:800;letter-spacing:1px;white-space:nowrap;flex-shrink:0;}
 .src{display:flex;align-items:center;gap:5px;height:22px;padding:0 8px;border:1px solid var(--brd);border-radius:4px;background:var(--bg2);white-space:nowrap;transition:all .2s;flex-shrink:0;}
@@ -22,4 +22,10 @@
 .fgVal{font-size:10px;font-weight:700;}
 .fgText{font-size:8px;font-weight:600;}
 .nokyc{font-size:9px;color:var(--txt3);white-space:nowrap;margin-left:auto;flex-shrink:0;}
-@media(max-width:768px){.bar{display:none;}}
+@media(max-width:768px){.bar{position:relative;display:none;}}
+
+.arb { display:flex;align-items:center;gap:4px;background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.25);border-radius:3px;padding:2px 7px;flex-shrink:0;font-size:9px;color:#eab308;font-weight:600; }
+.arbPct { font-size:10px;font-weight:800;color:#eab308; }
+.arbIcon { font-size:11px;color:#eab308; }
+.arbText { font-size:9px;color:#eab308;font-weight:600; }
+.arbProfit { font-size:10px;color:#eab308;font-weight:800; }

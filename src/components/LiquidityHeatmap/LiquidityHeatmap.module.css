@@ -4,3 +4,6 @@
 .live{font-size:7px;background:rgba(0,229,160,.15);color:var(--grn);border:1px solid rgba(0,229,160,.25);padding:1px 5px;border-radius:2px;font-weight:700;letter-spacing:.3px;flex-shrink:0;}
 .wall{font-size:8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .canvas{display:block;width:100%;flex:1;}
+
+.askLabel { font-size:8px; font-weight:700; color:rgba(255,59,92,.7); letter-spacing:.3px; }
+.bidLabel { font-size:8px; font-weight:700; color:rgba(0,229,160,.7); letter-spacing:.3px; }

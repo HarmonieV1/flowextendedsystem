@@ -1,0 +1,35 @@
+.wrap { display:flex;flex-direction:column;height:100%;overflow:hidden;background:var(--bg0); }
+.header { display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--brd);background:var(--bg1);flex-shrink:0; }
+.title  { font-size:13px;font-weight:800;color:var(--txt); }
+.modeSel { display:flex;gap:4px;margin-left:auto; }
+.modeBtn { padding:4px 10px;border:1px solid var(--brd);border-radius:4px;background:transparent;color:var(--txt3);font-size:10px;cursor:pointer;font-family:var(--mono); }
+.modeOn  { border-color:var(--grn);color:var(--grn);background:rgba(0,229,160,.08); }
+.live   { font-size:10px;font-weight:700;flex-shrink:0; }
+.signal { text-align:center;font-size:15px;font-weight:700;padding:12px;background:var(--bg2);border-bottom:1px solid var(--brd);flex-shrink:0; }
+.section { padding:10px 14px;border-bottom:1px solid var(--brd);flex-shrink:0; }
+.sLabel  { font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px; }
+.barRow  { display:flex;align-items:center;gap:8px; }
+.barAmt  { font-size:11px;font-weight:700;font-family:var(--mono);flex-shrink:0;width:52px; }
+.barTrack { flex:1;height:10px;border-radius:5px;overflow:hidden;display:flex;background:var(--bg3); }
+.barBuy  { background:var(--grn);height:100%;transition:width .3s; }
+.barSell { background:var(--red);height:100%;transition:width .3s; }
+.barPct  { display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);margin-top:4px; }
+.chartWrap { height:60px;background:var(--bg2);border-bottom:1px solid var(--brd);flex-shrink:0;overflow:hidden; }
+.whaleSection { flex:1;overflow:hidden;display:flex;flex-direction:column; }
+.whaleLbl { padding:8px 14px;font-size:10px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0; }
+.whaleList { flex:1;overflow-y:auto; }
+.whaleRow { display:grid;grid-template-columns:60px 40px 60px 80px 1fr;gap:8px;padding:7px 14px;border-bottom:1px solid var(--brd);font-family:var(--mono);font-size:10px;align-items:center; }
+.whaleTime { color:var(--txt3); }
+.whaleSide { font-weight:800; }
+.whaleUsd  { color:var(--txt);font-weight:700; }
+.whaleQty  { color:var(--txt3); }
+.whalePrice { color:var(--txt2); }
+.multiGrid { flex:1;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--brd); }
+.multiCard { background:var(--bg1);padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:background .1s; }
+.multiCard:hover { background:var(--bg2); }
+.multiSym  { font-size:16px;font-weight:800;color:var(--txt); }
+.miniBar   { height:6px;background:var(--bg3);border-radius:3px;overflow:hidden; }
+.miniBuy   { height:100%;background:var(--grn);transition:width .3s; }
+.multiStats { display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono); }
+.multiVol  { font-size:10px;color:var(--txt3);font-family:var(--mono); }
+.footer { padding:7px 14px;font-size:9px;color:var(--txt3);text-align:center;border-top:1px solid var(--brd);flex-shrink:0; }

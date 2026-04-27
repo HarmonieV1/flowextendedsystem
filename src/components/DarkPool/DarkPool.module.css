@@ -1,0 +1,25 @@
+.wrap{display:flex;flex-direction:column;height:100%;overflow:hidden;background:var(--bg0)}
+.header{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--brd);background:var(--bg1);gap:8px;flex-shrink:0}
+.title{font-size:13px;font-weight:800;color:var(--txt);flex:1}
+.toggleBtn{padding:6px 14px;border:1px solid var(--brd);border-radius:6px;background:transparent;color:var(--txt2);font-size:11px;font-weight:700;cursor:pointer}
+.on{border-color:var(--grn);color:var(--grn);background:rgba(0,229,160,.08)}
+.explainer{padding:8px 14px;font-size:11px;color:var(--txt3);border-bottom:1px solid var(--brd);line-height:1.5;flex-shrink:0}
+.statsGrid{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--brd);flex-shrink:0}
+.statChip{display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--bg2);border:1px solid var(--brd);border-radius:5px}
+.chipSym{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--txt)}
+.chipVol{font-family:var(--mono);font-size:10px;font-weight:700}
+.empty{flex:1;display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;font-size:12px;color:var(--txt3);line-height:1.6}
+.signalList{flex:1;overflow-y:auto}
+.listTitle{padding:8px 14px;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px}
+.signalRow{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--brd);background:rgba(245,158,11,.03);border-left:3px solid rgba(245,158,11,.4)}
+.sigLeft{display:flex;align-items:center;gap:10px;flex:1}
+.sigIcon{font-size:20px}
+.sigSym{font-weight:700;color:var(--txt);font-size:13px}
+.sigTime{font-size:10px;color:var(--txt3);font-family:var(--mono);margin-top:2px}
+.sigMid{text-align:center;min-width:80px}
+.sigMove{font-size:15px;font-weight:800;font-family:var(--mono)}
+.sigVolRatio{font-size:10px;font-family:var(--mono);margin-top:2px}
+.sigRight{text-align:center;min-width:60px}
+.sigConf{font-size:18px;font-weight:800;color:#f59e0b;font-family:var(--mono)}
+.sigConfLabel{font-size:9px;color:var(--txt3)}
+.footer{padding:7px 14px;font-size:9px;color:var(--txt3);text-align:center;border-top:1px solid var(--brd);flex-shrink:0}

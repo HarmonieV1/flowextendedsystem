@@ -1,228 +1,249 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState as useAlertState } from 'react'
+import { PriceAlerts } from '../PriceAlerts/PriceAlerts'
+import { useState, useEffect } from 'react'
 import { useStore } from '../../store'
 import { fmtPx } from '../../lib/format'
 import styles from './Comparator.module.css'
 
+// Sources confirmées CORS OK
 const SOURCES = [
   { id:'binance', label:'Binance', color:'#f0b90b' },
   { id:'bybit',   label:'Bybit',   color:'#f7a600' },
-  { id:'okx',     label:'OKX',     color:'#fff'    },
-  { id:'bitunix', label:'Bitunix', color:'#00c2ff' },
+  { id:'okx',     label:'OKX',     color:'#e8e8e8' },
   { id:'bitget',  label:'Bitget',  color:'#00d4c8' },
-  { id:'uniswap', label:'Uni V3',  color:'#ff007a', dex:true },
+  { id:'gate',    label:'Gate.io', color:'#2354e6' },
+  { id:'htx',      label:'HTX',     color:'#347deb' },
 ]
 
 const FG_COLORS = {
-  'Extreme Fear':  '#ef4444',
-  'Fear':          '#f97316',
-  'Neutral':       '#eab308',
-  'Greed':         '#22c55e',
-  'Extreme Greed': '#00e5a0',
+  'Extreme Fear':'#ef4444','Fear':'#f97316',
+  'Neutral':'#eab308','Greed':'#22c55e','Extreme Greed':'#00e5a0',
 }
 
 export function Comparator() {
   const pair   = useStore(s => s.pair)
   const lastPx = useStore(s => s.lastPx)
+  const setComparatorPrice = useStore(s => s.setComparatorPrice)
   const [prices, setPrices] = useState({})
-  const [fg, setFg] = useState(null) // { value, label }
+  const [fg, setFg] = useState(null)
+  const [alertOpen, setAlertOpen] = useState(false)
 
-  const setPrice = (id, bid, ask) => {
+  const set = (id, bid, ask) => {
     const b = parseFloat(bid), a = parseFloat(ask)
-    if (!isFinite(b) || !isFinite(a) || b <= 0 || a <= 0) return
-    setPrices(p => ({ ...p, [id]: { bid: b, ask: a } }))
+    if (!isFinite(b)||!isFinite(a)||b<=0||a<=0) return
+    setPrices(p => ({...p,[id]:{bid:b,ask:a}}))
+    setComparatorPrice?.(id, b, a)
   }
 
-  // ── Binance bookTicker WS (no CORS issue) ──
+  // ── Binance WS ──
   useEffect(() => {
     if (!pair) return
-    const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair.toLowerCase()}@bookTicker`)
-    ws.onmessage = e => { try { const d=JSON.parse(e.data); setPrice('binance',d.b,d.a) } catch(_){} }
-    return () => { ws.onclose=null; try{ws.close()}catch(_){} }
+    let ws, dead=false, retryT
+    const connect = () => {
+      if (dead) return
+      ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair.toLowerCase()}@bookTicker`)
+      ws.onmessage = e => { try{const d=JSON.parse(e.data);set('binance',d.b,d.a)}catch(_){} }
+      ws.onerror = () => {}
+      ws.onclose = () => { if(!dead) retryT=setTimeout(connect,3000) }
+    }
+    connect()
+    return () => { dead=true;clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(_){}} }
   }, [pair])
 
-  // ── OKX WS (works without proxy) ──
+  // ── Bybit REST ──
   useEffect(() => {
     if (!pair) return
-    const inst = pair.replace('USDT','-USDT')
-    let ws
-    try {
+    let dead=false
+    const poll = async () => {
+      if (dead) return
+      try {
+        const r = await fetch(`https://api.bybit.com/v5/market/tickers?category=spot&symbol=${pair}`,{signal:AbortSignal.timeout(4000)})
+        const d = await r.json()
+        const t = d?.result?.list?.[0]
+        if (t?.bid1Price) set('bybit',t.bid1Price,t.ask1Price)
+      } catch(_){}
+      if (!dead) setTimeout(poll,4000)
+    }
+    poll(); return()=>{dead=true}
+  }, [pair])
+
+  // ── OKX WS ──
+  useEffect(() => {
+    if (!pair) return
+    let ws, dead=false, retryT
+    const connect = () => {
+      if (dead) return
       ws = new WebSocket('wss://ws.okx.com:8443/ws/v5/public')
-      ws.onopen = () => ws.send(JSON.stringify({ op:'subscribe', args:[{ channel:'tickers', instId:inst }] }))
-      ws.onmessage = e => {
-        try {
-          const d = JSON.parse(e.data)
-          if (d.data?.[0]?.bidPx) setPrice('okx', d.data[0].bidPx, d.data[0].askPx)
-        } catch(_) {}
-      }
-    } catch(_) {}
-    return () => { if(ws){ws.onclose=null;try{ws.close()}catch(_){}} }
+      ws.onopen = () => ws.send(JSON.stringify({op:'subscribe',args:[{channel:'tickers',instId:pair.replace('USDT','-USDT')}]}))
+      ws.onmessage = e => { try{const d=JSON.parse(e.data);if(d.data?.[0]?.bidPx)set('okx',d.data[0].bidPx,d.data[0].askPx)}catch(_){} }
+      ws.onerror = () => {}
+      ws.onclose = () => { if(!dead) retryT=setTimeout(connect,3000) }
+    }
+    connect()
+    return()=>{dead=true;clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(_){}}}
   }, [pair])
 
-  // ── Bybit via Netlify proxy (poll every 3s) ──
+  // ── Bitget WS ──
   useEffect(() => {
     if (!pair) return
-    let dead = false
-    const poll = async () => {
+    let ws, dead=false, retryT
+    const connect = () => {
       if (dead) return
-      try {
-        const res = await fetch(`/.netlify/functions/bybit-ticker?symbol=${pair}`)
-        const d = await res.json()
-        if (d.bid && d.ask) setPrice('bybit', d.bid, d.ask)
-      } catch(_) {}
-      if (!dead) setTimeout(poll, 3000)
+      ws = new WebSocket('wss://ws.bitget.com/v2/ws/public')
+      ws.onopen = () => ws.send(JSON.stringify({op:'subscribe',args:[{instType:'SPOT',channel:'ticker',instId:pair}]}))
+      ws.onmessage = e => { try{const d=JSON.parse(e.data);const t=d.data?.[0];if(t?.bidPr)set('bitget',t.bidPr,t.askPr)}catch(_){} }
+      ws.onerror = () => {}
+      ws.onclose = () => { if(!dead) retryT=setTimeout(connect,3000) }
     }
-    poll()
-    return () => { dead = true }
+    connect()
+    return()=>{dead=true;clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(_){}}}
   }, [pair])
 
-  // ── Bitget via Netlify proxy (poll every 3s) ──
+  // ── Gate.io WS ──
   useEffect(() => {
     if (!pair) return
-    let dead = false
-    const poll = async () => {
+    const gatePair = pair.replace('USDT','_USDT')
+    let ws, dead=false, retryT
+    const connect = () => {
       if (dead) return
       try {
-        const res = await fetch(`/.netlify/functions/bitget-ticker?symbol=${pair}`)
-        const d = await res.json()
-        if (d.bid && d.ask) setPrice('bitget', d.bid, d.ask)
-      } catch(_) {}
-      if (!dead) setTimeout(poll, 3000)
-    }
-    poll()
-    return () => { dead = true }
-  }, [pair])
-
-  // ── Bitunix via Netlify proxy (CORS bloqué côté browser) ──
-  useEffect(() => {
-    if (!pair) return
-    let dead = false
-    const poll = async () => {
-      if (dead) return
-      try {
-        const res = await fetch(`/.netlify/functions/bitunix-ticker?symbol=${pair}`)
-        const d = await res.json()
-        if (d.bid && d.ask) setPrice('bitunix', d.bid, d.ask)
-      } catch(_) {}
-      if (!dead) setTimeout(poll, 3000)
-    }
-    poll()
-    return () => { dead = true }
-  }, [pair])
-
-  // ── 0x Protocol / Uniswap V3 — prix réel via quote API ──
-  useEffect(() => {
-    if (!pair || !lastPx) return
-    let dead = false
-    const poll = async () => {
-      if (dead) return
-      try {
-        // ETH en exemple — on quote 0.1 ETH → USDC via 0x
-        const base = pair.replace('USDT','')
-        // Seulement pour les paires ETH/BTC supportées par 0x
-        if (!['ETH','BTC','WBTC'].includes(base)) {
-          // Pour les autres paires, spread DEX estimé (~0.3%)
-          const s = lastPx * 0.0015
-          setPrice('uniswap', lastPx - s, lastPx + s)
-          return
+        ws = new WebSocket('wss://api.gateio.ws/ws/v4/')
+        ws.onopen = () => ws.send(JSON.stringify({time:Math.floor(Date.now()/1000),channel:'spot.book_ticker',event:'subscribe',payload:[gatePair]}))
+        ws.onmessage = e => {
+          try {
+            const d = JSON.parse(e.data)
+            if (d.result?.b && d.result?.a) set('gate', parseFloat(d.result.b), parseFloat(d.result.a))
+          } catch(_) {}
         }
-        const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
-        const ETH  = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
-        const WBTC = '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'
-        const sellToken = base === 'ETH' ? ETH : WBTC
-        const sellAmount = base === 'ETH' ? '100000000000000000' : '1000000' // 0.1 ETH or 0.01 BTC
-        const res = await fetch(
-          `https://api.0x.org/swap/v1/price?sellToken=${sellToken}&buyToken=${USDC}&sellAmount=${sellAmount}`,
-          { headers: { 'Accept': 'application/json' } }
-        )
-        const d = await res.json()
-        if (d.price) {
-          const dexPx = parseFloat(d.price)
-          const spread = dexPx * 0.001
-          setPrice('uniswap', dexPx - spread, dexPx + spread)
-        }
-      } catch(_) {
-        // Fallback spread
-        const s = lastPx * 0.0015
-        setPrice('uniswap', lastPx - s, lastPx + s)
-      }
-      if (!dead) setTimeout(poll, 10000) // 0x rate limit — poll 10s
+        ws.onerror = () => {}
+        ws.onclose = () => { if(!dead) retryT=setTimeout(connect,3000) }
+      } catch(_) { if(!dead) retryT=setTimeout(connect,3000) }
     }
-    poll()
-    return () => { dead = true }
-  }, [pair, lastPx])
+    connect()
+    return()=>{dead=true;clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(_){}}}
+  }, [pair])
 
-  // ── Fear & Greed Index (cached 5min via proxy) ──
+  // ── HTX (Huobi) WS ──
+  useEffect(() => {
+    if (!pair) return
+    const htxPair = pair.toLowerCase().replace('usdt','')
+    const sub = 'market.' + htxPair + 'usdt.bbo'
+    let ws, dead=false, retryT, pingT
+    const connect = () => {
+      if (dead) return
+      try {
+        ws = new WebSocket('wss://api.huobi.pro/ws')
+        ws.onopen = () => { ws.send(JSON.stringify({sub, id:'fxs'})); pingT = setInterval(()=>{ if(ws.readyState===1) ws.send(JSON.stringify({ping:Date.now()})) },20000) }
+        ws.onmessage = async e => {
+          try {
+            const txt = e.data instanceof Blob ? await e.data.text() : e.data
+            const buf = typeof DecompressionStream !== 'undefined'
+              ? await new Response(new Response(e.data).body.pipeThrough(new DecompressionStream('gzip'))).text()
+              : txt
+            const d = JSON.parse(buf)
+            if (d.pong) { ws.send(JSON.stringify({pong:d.ping})); return }
+            if (d.tick?.bid && d.tick?.ask) set('htx', d.tick.bid, d.tick.ask)
+          } catch(_) {}
+        }
+        ws.onerror = () => {}
+        ws.onclose = () => { clearInterval(pingT); if(!dead) retryT=setTimeout(connect,3000) }
+      } catch(_) { if(!dead) retryT=setTimeout(connect,3000) }
+    }
+    connect()
+    return()=>{dead=true;clearTimeout(retryT);clearInterval(pingT);if(ws){ws.onclose=null;try{ws.close()}catch(_){}}}
+  }, [pair])
+
+  // ── Fear & Greed ──
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('/.netlify/functions/fear-greed')
-        const d = await res.json()
-        if (d.value) setFg(d)
-      } catch(_) {}
+        const r = await fetch('https://api.alternative.me/fng/?limit=1',{signal:AbortSignal.timeout(5000)})
+        const d = await r.json()
+        const item = d?.data?.[0]
+        if (item?.value) setFg({value:parseInt(item.value),label:item.value_classification})
+      } catch(_){}
     }
-    load()
-    const t = setInterval(load, 5 * 60 * 1000)
-    return () => clearInterval(t)
+    load(); const t=setInterval(load,5*60*1000); return()=>clearInterval(t)
   }, [])
 
-  // ── Compute best/worst ──
-  const valid = SOURCES.map(s => ({ ...s, data: prices[s.id] })).filter(s => s.data?.ask > 0)
-  const bestAsk  = valid.length ? Math.min(...valid.map(s => s.data.ask)) : 0
-  const worstAsk = valid.length ? Math.max(...valid.map(s => s.data.ask)) : 0
-  const savingsPct = bestAsk > 0 && worstAsk > bestAsk ? ((worstAsk - bestAsk) / worstAsk * 100) : 0
+  const valid     = SOURCES.map(s=>({...s,data:prices[s.id]})).filter(s=>s.data?.ask>0)
+  const bestAsk   = valid.length ? Math.min(...valid.map(s=>s.data.ask)) : 0
+  const worstAsk  = valid.length ? Math.max(...valid.map(s=>s.data.ask)) : 0
+  const savingsPct = bestAsk>0&&worstAsk>bestAsk ? ((worstAsk-bestAsk)/worstAsk*100) : 0
+  const fgColor   = fg ? (FG_COLORS[fg.label]||'#eab308') : '#eab308'
 
-  const fgColor = fg ? (FG_COLORS[fg.label] || '#eab308') : '#eab308'
-  const fgPct   = fg?.value || 50
+  // Arbitrage: best net after 0.1% fees
+  const arbSrc = valid.length >= 2 ? (() => {
+    const cheap = valid.reduce((a,b) => a.data.ask<b.data.ask ? a : b)
+    const dear  = valid.reduce((a,b) => a.data.ask>b.data.ask ? a : b)
+    const net   = ((dear.data.ask - cheap.data.ask) / cheap.data.ask * 100 - 0.1)
+    return net > 0.01 ? { from:cheap.label, to:dear.label, pct:net.toFixed(3) } : null
+  })() : null
 
   return (
+    <div style={{position:'relative'}}>
     <div className={styles.bar}>
       <span className={styles.bestLabel}>BEST PRICE</span>
 
       {SOURCES.map(src => {
-        const data = prices[src.id]
-        const isBest  = data?.ask > 0 && Math.abs(data.ask - bestAsk) < 0.01
-        const diffPct = data?.ask && bestAsk ? ((data.ask - bestAsk) / bestAsk * 100) : null
-
+        const data  = prices[src.id]
+        const isBest = data?.ask>0 && Math.abs(data.ask-bestAsk)<0.5
+        const diffPct = data?.ask&&bestAsk>0 ? ((data.ask-bestAsk)/bestAsk*100) : null
         return (
-          <div key={src.id} className={`${styles.src} ${isBest?styles.best:''} ${src.dex?styles.dex:''}`}>
-            {src.dex && <span className={styles.dexTag}>DEX</span>}
+          <div key={src.id} className={`${styles.src} ${isBest?styles.best:''}`}>
             <span className={styles.srcName}>{src.label}</span>
             <span className={styles.srcPx} style={isBest?{color:src.color}:{}}>
               {data?.ask ? fmtPx(data.ask) : <span className={styles.dash}>—</span>}
             </span>
             {isBest && <span className={styles.bestTag}>BEST</span>}
-            {diffPct !== null && diffPct > 0.001 && !isBest && (
-              <span className={styles.diff}>+{diffPct.toFixed(3)}%</span>
-            )}
+            {diffPct!==null&&diffPct>0.001&&!isBest&&<span className={styles.diff}>+{diffPct.toFixed(3)}%</span>}
           </div>
         )
       })}
 
-      <div className={styles.sep}/>
+      {arbSrc && (
+        <div className={styles.arb} title={`Acheter ${arbSrc.from}, vendre ${arbSrc.to} — net après frais`}>
+          <span>⇄</span>
+          <span>{arbSrc.from}→{arbSrc.to}</span>
+          <span className={styles.arbPct}>+{arbSrc.pct}%</span>
+        </div>
+      )}
 
-      {/* Savings */}
-      {savingsPct > 0.001 && (
+      <div className={styles.sep}/>
+      {savingsPct>0.001 && (
         <div className={styles.savings}>
           <span>⚡</span>
-          <span>Tu économises <strong>{savingsPct.toFixed(3)}%</strong></span>
+          <strong>{savingsPct.toFixed(3)}%</strong>
+          <span>économisé</span>
         </div>
       )}
 
-      <div className={styles.sep}/>
+      <button
+        onClick={() => setAlertOpen(o => !o)}
+        style={{background:'transparent',border:'1px solid rgba(255,255,255,.1)',borderRadius:'4px',color:alertOpen?'var(--grn)':'var(--txt3)',padding:'2px 8px',cursor:'pointer',fontSize:'11px',flexShrink:0}}
+        title="Alertes prix"
+      >🔔</button>
 
-      {/* Fear & Greed */}
-      {fg && (
-        <div className={styles.fgWrap} title={`Fear & Greed: ${fg.value}/100`}>
+      {fg && <>
+        <div className={styles.sep}/>
+        <div className={styles.fgWrap}>
           <span className={styles.fgLabel}>F&G</span>
           <div className={styles.fgBar}>
-            <div className={styles.fgFill} style={{ width:`${fgPct}%`, background: fgColor }}/>
+            <div className={styles.fgFill} style={{width:`${fg.value}%`,background:fgColor}}/>
           </div>
-          <span className={styles.fgVal} style={{ color: fgColor }}>{fg.value}</span>
-          <span className={styles.fgText} style={{ color: fgColor }}>{fg.label}</span>
+          <span className={styles.fgVal} style={{color:fgColor}}>
+            {fg.value} <span className={styles.fgText}>{fg.label}</span>
+          </span>
         </div>
-      )}
+      </>}
 
       <span className={styles.nokyc}>no KYC · non-custodial</span>
+    </div>
+    {alertOpen && (
+      <div style={{position:'absolute',top:'100%',right:'14px',width:'360px',background:'var(--bg1)',border:'1px solid var(--brd2)',borderRadius:'10px',zIndex:500,boxShadow:'0 8px 40px rgba(0,0,0,.8)',overflow:'hidden',maxHeight:'480px'}}>
+        <PriceAlerts />
+      </div>
+    )}
     </div>
   )
 }

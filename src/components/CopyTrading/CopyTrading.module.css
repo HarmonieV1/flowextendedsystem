@@ -1,0 +1,104 @@
+.wrap{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;background:var(--bg0);}
+.header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--brd);background:var(--bg1);flex-shrink:0;}
+.headerLeft{display:flex;align-items:center;gap:8px;}
+.title{font-family:var(--sans);font-size:18px;font-weight:800;color:var(--txt);}
+.beta{font-size:9px;background:rgba(0,229,160,.15);color:var(--grn);border:1px solid rgba(0,229,160,.3);padding:2px 7px;border-radius:3px;font-weight:700;letter-spacing:.5px;}
+.pnlHeader{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+.pnlBig{font-family:var(--sans);font-size:20px;font-weight:800;color:var(--grn);}
+.pnlSub{font-size:9px;color:var(--txt3);}
+.tabs{display:flex;border-bottom:1px solid var(--brd);background:var(--bg1);flex-shrink:0;overflow-x:auto;scrollbar-width:none;padding:0 12px;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:10px 14px;border:none;background:transparent;color:var(--txt3);font-family:var(--mono);font-size:11px;font-weight:600;cursor:pointer;position:relative;transition:color .12s;white-space:nowrap;}
+.tab:hover{color:var(--txt2);}
+.tab.tabOn{color:var(--txt);}
+.tab.tabOn::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--grn);}
+.content{flex:1;overflow-y:auto;padding:20px 24px;scrollbar-width:thin;}
+
+/* Pool */
+.poolSection{display:flex;flex-direction:column;gap:16px;max-width:680px;}
+.statsBar{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
+.statCard{background:var(--bg2);border:1px solid var(--brd);border-radius:6px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.statCardL{font-size:8px;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;text-align:center;}
+.statCardV{font-weight:700;font-family:var(--mono);}
+
+/* Deposit */
+.depositCard{background:var(--bg2);border:1px solid var(--brd);border-radius:10px;overflow:hidden;}
+.depositHeader{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--brd);background:var(--bg1);}
+.depositTitle{font-size:14px;font-weight:700;color:var(--txt);}
+.depositMin{font-size:11px;color:var(--grn);font-weight:600;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);padding:2px 8px;border-radius:3px;}
+
+.networkSel{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:16px 20px;border-bottom:1px solid var(--brd);}
+.netBtn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px;border:1px solid var(--brd);border-radius:6px;background:transparent;cursor:pointer;transition:all .15s;color:var(--txt3);}
+.netBtn:hover{border-color:var(--brd2);background:var(--bg3);}
+.netBtn.netOn{border-color:rgba(0,229,160,.35);background:rgba(0,229,160,.06);color:var(--txt);}
+.netIcon{font-size:16px;}
+.netFee{font-size:9px;color:var(--txt3);}
+
+.depositBody{display:flex;gap:20px;padding:20px;align-items:flex-start;}
+.qrWrap{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;}
+.qrImg{display:block;border-radius:6px;border:1px solid var(--brd);}
+.qrNet{font-size:9px;color:var(--txt3);text-align:center;}
+
+.addrBlock{flex:1;display:flex;flex-direction:column;gap:10px;}
+.addrLabel{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;}
+.addrBox{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--brd);border-radius:6px;padding:10px 12px;}
+.addr{flex:1;font-family:var(--mono);font-size:10px;color:var(--txt2);word-break:break-all;line-height:1.4;}
+.copyBtn{background:var(--grn);border:none;color:#000;padding:6px 14px;border-radius:4px;font-family:var(--mono);font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .12s;flex-shrink:0;}
+.copyBtn:hover{filter:brightness(1.08);}
+.warning{font-size:10px;color:#f59e0b;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:4px;padding:8px 10px;line-height:1.5;}
+.terms{display:flex;flex-direction:column;gap:5px;}
+.term{display:flex;gap:7px;font-size:11px;color:var(--txt2);}
+
+.contactNote{display:flex;align-items:center;gap:10px;padding:12px 20px;border-top:1px solid var(--brd);background:rgba(0,229,160,.03);font-size:11px;color:var(--txt3);}
+
+/* Master */
+.masterSection{max-width:680px;}
+.masterCard{background:var(--bg2);border:1px solid rgba(0,229,160,.2);border-radius:10px;overflow:hidden;}
+.masterTop{display:flex;align-items:flex-start;gap:14px;padding:20px;border-bottom:1px solid var(--brd);}
+.avatar{width:48px;height:48px;border-radius:50%;background:rgba(0,229,160,.15);border:2px solid var(--grn);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.masterInfo{flex:1;}
+.masterName{display:flex;align-items:center;gap:6px;font-family:var(--sans);font-size:16px;font-weight:800;color:var(--txt);margin-bottom:4px;}
+.badge{font-size:9px;background:var(--grn);color:#000;padding:2px 7px;border-radius:3px;font-weight:800;letter-spacing:.5px;}
+.verified{color:var(--grn);font-size:12px;}
+.masterBio{font-size:11px;color:var(--txt3);}
+.masterPnl{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+.masterStats{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding:16px 20px;}
+.statBox{background:var(--bg3);border:1px solid var(--brd);border-radius:5px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.statL{font-size:8px;color:var(--txt3);text-transform:uppercase;letter-spacing:.3px;text-align:center;}
+.statV{font-size:12px;font-weight:700;}
+.masterCTA{padding:16px 20px;border-top:1px solid var(--brd);}
+.depositCTA{width:100%;padding:12px;border:none;border-radius:6px;background:var(--grn);color:#000;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;}
+.depositCTA:hover{filter:brightness(1.08);}
+
+/* Trades */
+.tradesWrap{border:1px solid var(--brd);border-radius:8px;overflow:hidden;}
+.tradesHead{display:grid;grid-template-columns:1fr .6fr .8fr .8fr .6fr .8fr;padding:8px 14px;background:var(--bg2);border-bottom:1px solid var(--brd);font-size:9px;color:var(--txt3);letter-spacing:.4px;}
+.tradeRow{display:grid;grid-template-columns:1fr .6fr .8fr .8fr .6fr .8fr;padding:10px 14px;border-bottom:1px solid var(--brd);align-items:center;transition:background .1s;}
+.tradeRow:hover{background:var(--bg2);}
+.tradePair{font-size:11px;font-weight:600;color:var(--txt);}
+.tradeSide{font-size:10px;font-weight:700;}
+.long{color:var(--grn);}.short{color:var(--red);}
+.tradeVal{font-size:10px;color:var(--txt2);}
+.tradePnl{font-size:11px;font-weight:700;}
+.pos{color:var(--grn);}.neg{color:var(--red);}
+.tradeDate{font-size:9px;color:var(--txt3);}
+
+/* How to */
+.howTo{display:flex;flex-direction:column;gap:16px;max-width:600px;}
+.step{display:flex;gap:16px;align-items:flex-start;}
+.stepN{width:28px;height:28px;border-radius:50%;background:var(--grn);color:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;}
+.stepTitle{font-size:14px;font-weight:700;color:var(--txt);margin-bottom:5px;}
+.stepText{font-size:12px;color:var(--txt3);line-height:1.6;}
+.disclaimer{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:6px;padding:12px;font-size:11px;color:#f59e0b;line-height:1.5;}
+
+@media(max-width:768px){
+  .header{padding:10px 14px;} .title{font-size:14px;}
+  .content{padding:12px;}
+  .statsBar,.masterStats{grid-template-columns:repeat(3,1fr);}
+  .depositBody{flex-direction:column;} .qrWrap{align-self:center;}
+  .tradesHead,.tradeRow{grid-template-columns:1fr .6fr .7fr .6fr;}
+  .tradesHead span:nth-child(3),.tradeRow span:nth-child(3),
+  .tradesHead span:nth-child(6),.tradeRow span:nth-child(6){display:none;}
+}
+.clientBtn { background:rgba(0,229,160,.1); border:1px solid rgba(0,229,160,.25); color:var(--grn); padding:7px 14px; border-radius:5px; font-family:var(--mono); font-size:11px; font-weight:700; cursor:pointer; transition:all .15s; white-space:nowrap; }
+.clientBtn:hover { background:rgba(0,229,160,.18); }

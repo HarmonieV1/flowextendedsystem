@@ -1,0 +1,37 @@
+.wrap {
+  display: flex; flex-direction: column;
+  height: 100%; overflow: hidden; background: var(--bg0);
+}
+.header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-bottom: 1px solid var(--brd);
+  background: var(--bg1); flex-shrink: 0;
+}
+.title  { font-size:13px; font-weight:800; color:var(--txt); flex:1; }
+.pair   { font-family:var(--mono); font-size:11px; color:var(--txt3); }
+.window { font-family:var(--mono); font-size:10px; color:var(--txt3); padding:2px 6px; border:1px solid var(--brd); border-radius:3px; }
+.live   { font-size:10px; font-weight:700; }
+.legend {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 14px; font-size: 10px; border-bottom: 1px solid var(--brd);
+  flex-shrink: 0; background: var(--bg1);
+}
+.legendCenter { color: var(--txt3); }
+/* Canvas wrapper takes ALL remaining space */
+.canvasWrap {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: #09090b;
+  position: relative;
+}
+/* Canvas fills wrapper via JS sizing */
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.footer {
+  padding: 7px 14px; font-size: 9px; color: var(--txt3);
+  text-align: center; border-top: 1px solid var(--brd); flex-shrink: 0;
+}

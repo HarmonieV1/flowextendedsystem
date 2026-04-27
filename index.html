@@ -3,10 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>fxs-exchange</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>FXSEDGE</title>
+    <script>
+      window.onerror = function(msg, src, line, col, err) {
+        var el = document.getElementById('root');
+        if (!el) return false;
+        el.innerHTML = '<div style="padding:20px;background:#09090b;color:#ff3b5c;font-family:monospace;font-size:12px;min-height:100vh"><div style="color:#00e5a0;font-size:18px;margin-bottom:16px">FXS — Erreur</div><div>' + msg + '</div><div style="color:#666;margin-top:8px">' + (src||'') + ':' + line + '</div><button onclick="location.reload()" style="margin-top:20px;padding:12px 24px;background:#00e5a0;border:none;border-radius:8px;color:#000;font-weight:700">Recharger</button></div>';
+        return false;
+      };
+      window.addEventListener('unhandledrejection', function(e) {
+        window.onerror('Promise: ' + (e.reason && e.reason.message || String(e.reason)), '', 0, 0, e.reason);
+      });
+    </script>
   </head>
   <body>
+    <script>
+      (function() {
+        var h = window.location.hash;
+        if (h && (h.includes('=') || h.includes('TGWEB') || h.length > 25)) {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

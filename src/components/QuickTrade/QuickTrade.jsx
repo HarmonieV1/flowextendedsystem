@@ -1,11 +1,11 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useStore } from '../../store'
 import { fmt, fmtPx, baseAsset } from '../../lib/format'
 import { useBitunixTrade } from '../../hooks/useBitunixTrade'
 import styles from './QuickTrade.module.css'
 
-const QUICK_SIZES = ['25%', '50%', '75%', 'MAX']
-const QUICK_AMOUNTS_USD = [10, 25, 50, 100, 250, 500]
+const PRESETS_PCT = ['25%','50%','75%','MAX']
+const PRESETS_USD = [10,25,50,100]
 
 export function QuickTrade({ onConnectBinance, onOpenWallet }) {
   const pair    = useStore(s => s.pair)
@@ -13,146 +13,130 @@ export function QuickTrade({ onConnectBinance, onOpenWallet }) {
   const connected = useStore(s => s.connected)
   const balance = useStore(s => s.balance)
 
-  const { apiConnected, balances: rawBalances = [], loading, executeOrder } = useBitunixTrade()
+  const { apiConnected, balances: rawBalances = [], executeOrder } = useBitunixTrade()
 
-  const [side, setSide]     = useState('buy')
-  const [mode, setMode]     = useState('pct')  // 'pct' | 'usd'
-  const [selectedPct, setSelectedPct] = useState(null)
-  const [selectedUSD, setSelectedUSD] = useState(null)
-  const [status, setStatus] = useState(null)  // null | 'pending' | 'done' | 'error'
+  const [side,   setSide]   = useState('buy')
+  const [otype,  setOtype]  = useState('market')
+  const [qty,    setQty]    = useState('')
+  const [preset, setPreset] = useState(null)
+  const [status, setStatus] = useState(null)
   const [errMsg, setErrMsg] = useState('')
 
   const base = baseAsset(pair)
   const usdtBal = rawBalances.find?.(b => b.sym === 'USDT')?.free || balance || 0
 
   const calcQty = () => {
-    if (!lastPx) return 0
-    if (mode === 'pct' && selectedPct !== null) {
-      const pcts = [0.25, 0.5, 0.75, 1.0]
-      return (usdtBal * pcts[selectedPct]) / lastPx
+    if (!lastPx || !preset) return 0
+    if (typeof preset === 'string') {
+      const pct = parseInt(preset) / 100
+      return (usdtBal * pct) / lastPx
     }
-    if (mode === 'usd' && selectedUSD !== null) {
-      return QUICK_AMOUNTS_USD[selectedUSD] / lastPx
-    }
-    return 0
+    return preset / lastPx
   }
 
-  const qty = calcQty()
-  const costUSD = qty * lastPx
+  const displayQty = qty || (preset ? calcQty().toFixed(6) : '')
+  const total = parseFloat(displayQty) * lastPx
 
-  const handleTrade = useCallback(async () => {
+  const handleTrade = async () => {
     if (!connected) { onOpenWallet?.(); return }
     if (!apiConnected) { onConnectBinance?.(); return }
-    if (!qty || qty <= 0) return
-
-    setStatus('pending')
+    const q = parseFloat(displayQty)
+    if (!q || q <= 0) { setErrMsg('Entre une quantité'); return }
+    setStatus('pending'); setErrMsg('')
     try {
-      await executeOrder({
-        side: side === 'buy' ? 'BUY' : 'SELL',
-        type: 'MARKET',
-        quantity: qty.toFixed(6),
-      })
-      setStatus('done')
-      setSelectedPct(null); setSelectedUSD(null)
+      await executeOrder({ symbol: pair, side, type: otype, quantity: q, price: lastPx })
+      setStatus('done'); setQty(''); setPreset(null)
       setTimeout(() => setStatus(null), 2000)
     } catch(e) {
       setStatus('error')
-      setErrMsg(e.message?.includes('insufficient') ? 'Fonds insuffisants' : 'Erreur — réessaie')
+      setErrMsg(e.message?.includes('reject') ? 'Annulé' : e.message?.slice(0,60) || 'Erreur')
       setTimeout(() => setStatus(null), 3000)
     }
-  }, [connected, apiConnected, qty, side, executeOrder])
-
-  const canTrade = qty > 0 && status !== 'pending'
+  }
 
   return (
     <div className={styles.wrap}>
-      {/* Side toggle */}
+      {/* Buy / Sell */}
       <div className={styles.sides}>
-        <button
-          className={`${styles.side} ${styles.buySide} ${side==='buy'?styles.sideOn:''}`}
-          onClick={() => setSide('buy')}
-        >Buy</button>
-        <button
-          className={`${styles.side} ${styles.sellSide} ${side==='sell'?styles.sideOn:''}`}
-          onClick={() => setSide('sell')}
-        >Sell</button>
+        <button className={styles.side + ' ' + styles.sideB + (side==='buy'?' '+styles.on:'')} onClick={()=>setSide('buy')}>
+          Acheter {base}
+        </button>
+        <button className={styles.side + ' ' + styles.sideS + (side==='sell'?' '+styles.on:'')} onClick={()=>setSide('sell')}>
+          Vendre {base}
+        </button>
       </div>
 
-      {/* Mode toggle */}
-      <div className={styles.modeRow}>
-        <button className={`${styles.modeBtn} ${mode==='pct'?styles.modeOn:''}`} onClick={() => { setMode('pct'); setSelectedUSD(null) }}>% du portefeuille</button>
-        <button className={`${styles.modeBtn} ${mode==='usd'?styles.modeOn:''}`} onClick={() => { setMode('usd'); setSelectedPct(null) }}>Montant fixe</button>
-      </div>
+      <div className={styles.body}>
+        {/* Current price */}
+        <div className={styles.priceRow}>
+          <span className={styles.priceLabel}>Prix actuel</span>
+          <span className={styles.priceVal}>{fmtPx(lastPx)}</span>
+        </div>
 
-      {/* Size grid */}
-      {mode === 'pct' && (
-        <div className={styles.sizeGrid}>
-          {QUICK_SIZES.map((s, i) => (
-            <button
-              key={s}
-              className={`${styles.sizeBtn} ${selectedPct===i?styles.sizeBtnOn:''} ${side==='buy'?styles.sizeBtnBuy:styles.sizeBtnSell}`}
-              onClick={() => setSelectedPct(selectedPct===i ? null : i)}
-            >{s}</button>
+        {/* Order type */}
+        <div className={styles.typeRow}>
+          {['market','limit','stop'].map(t => (
+            <button key={t} className={styles.typeBtn+(otype===t?' '+styles.on:'')} onClick={()=>setOtype(t)}>
+              {t.charAt(0).toUpperCase()+t.slice(1)}
+            </button>
           ))}
         </div>
-      )}
 
-      {mode === 'usd' && (
-        <div className={styles.usdGrid}>
-          {QUICK_AMOUNTS_USD.map((a, i) => (
-            <button
-              key={a}
-              className={`${styles.sizeBtn} ${selectedUSD===i?styles.sizeBtnOn:''} ${side==='buy'?styles.sizeBtnBuy:styles.sizeBtnSell}`}
-              onClick={() => setSelectedUSD(selectedUSD===i ? null : i)}
-            >${a}</button>
+        {/* Amount input */}
+        <div className={styles.inputRow}>
+          <input
+            className={styles.input}
+            type="number"
+            placeholder={side==='buy' ? '0.000000' : '0.000000'}
+            value={qty}
+            onChange={e => { setQty(e.target.value); setPreset(null) }}
+          />
+          <span className={styles.inputUnit}>{base}</span>
+        </div>
+
+        {/* Quick presets */}
+        <div className={styles.presets}>
+          {(side==='buy' ? PRESETS_PCT : PRESETS_PCT).map(p => (
+            <button key={p}
+              className={styles.preset+(preset===p?' '+styles.sel:'')}
+              onClick={() => { setPreset(p); setQty('') }}
+            >{p}</button>
           ))}
         </div>
-      )}
 
-      {/* Order preview */}
-      <div className={styles.preview}>
-        <div className={styles.previewRow}>
-          <span>Paire</span><span>{pair.replace('USDT','/USDT')}</span>
-        </div>
-        <div className={styles.previewRow}>
-          <span>Prix</span><span>{fmtPx(lastPx)}</span>
-        </div>
-        <div className={styles.previewRow}>
-          <span>Quantité</span>
-          <span className={styles.previewQty}>{qty > 0 ? `${qty.toFixed(6)} ${base}` : '—'}</span>
-        </div>
-        <div className={styles.previewRow}>
-          <span>Total</span>
-          <span className={`${styles.previewTotal} ${side==='buy'?styles.buyColor:styles.sellColor}`}>
-            {costUSD > 0 ? `$${fmt(costUSD)}` : '—'}
-          </span>
-        </div>
-        <div className={styles.previewRow}>
-          <span>Disponible</span>
-          <span>${fmt(usdtBal)} USDT</span>
-        </div>
+        {/* Summary */}
+        {(parseFloat(displayQty) > 0) && (
+          <div className={styles.summary}>
+            <div className={styles.sumRow}><span>Quantité</span><span>{parseFloat(displayQty).toFixed(6)} {base}</span></div>
+            <div className={styles.sumRow}><span>Total estimé</span><span>${fmt(total)}</span></div>
+            <div className={styles.sumRow}><span>Frais (~0.1%)</span><span>${fmt(total*0.001,3)}</span></div>
+            {usdtBal > 0 && <div className={styles.sumRow}><span>Solde USDT</span><span>${fmt(usdtBal)}</span></div>}
+          </div>
+        )}
+
+        {errMsg && <div className={styles.err}>⚠ {errMsg}</div>}
+        {status==='done' && <div className={styles.ok}>✓ Ordre exécuté</div>}
+
+        {!connected && (
+          <button className={styles.cpBtn} onClick={onOpenWallet}>Connecter Wallet</button>
+        )}
+        {connected && !apiConnected && (
+          <button className={styles.cpBtn} style={{background:'#f59e0b'}} onClick={onConnectBinance}>
+            Connecter Bitunix API
+          </button>
+        )}
       </div>
 
-      {/* Execute button */}
-      <button
-        className={`${styles.execBtn} ${side==='buy'?styles.execBuy:styles.execSell} ${status==='done'?styles.execDone:''} ${status==='error'?styles.execErr:''}`}
-        disabled={!canTrade && connected && apiConnected}
-        onClick={handleTrade}
-      >
-        {status === 'pending' ? <><span className={styles.spinner}/>Envoi...</>
-          : status === 'done' ? '✓ Ordre exécuté'
-          : status === 'error' ? `✗ ${errMsg}`
-          : !connected ? 'Connect Wallet'
-          : !apiConnected ? 'Connecter Bitunix →'
-          : !qty ? 'Sélectionne une taille'
-          : `${side==='buy'?'Acheter':'Vendre'} ${qty.toFixed(4)} ${base} · Market`}
-      </button>
-
-      {/* Fee note */}
-      {qty > 0 && (
-        <div className={styles.feeNote}>
-          Fee 0.1% ≈ ${fmt(costUSD * 0.001, 4)} · Non-custodial via Bitunix
-        </div>
+      {/* Action button */}
+      {connected && apiConnected && (
+        <button
+          className={styles.execBtn + ' ' + (side==='buy' ? styles.execBuy : styles.execSell)}
+          onClick={handleTrade}
+          disabled={status==='pending'}
+          style={{margin:'0 12px 12px'}}
+        >
+          {status==='pending' ? '⟳ Envoi...' : side==='buy' ? `Acheter ${base}` : `Vendre ${base}`}
+        </button>
       )}
     </div>
   )

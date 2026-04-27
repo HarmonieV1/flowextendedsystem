@@ -12,7 +12,7 @@ export const useStore = create((set, get) => ({
   // ── View mode ──
   view: 'trade', // 'trade' | 'multi' | 'wallet'
   setView: (view) => { set({ view }); saveSession({ view }) },
-  tab: 'Spot', // 'Spot' | 'Futures' | 'Swap'
+  tab: 'Futures', // 'Futures' | 'Spot'
   setTab: (tab) => { set({ tab }); saveSession({ tab }) },
 
   // ── Order form ──
@@ -30,7 +30,7 @@ export const useStore = create((set, get) => ({
   // ── Wallet / auth ──
   connected: false,
   address: null,
-  balance: 12000, // replaced by real on-chain balance in Sprint 4
+  balance: 0,
   setConnected: (connected, address) => set({ connected, address }),
   setBalance: (balance) => set({ balance }),
 
@@ -42,6 +42,8 @@ export const useStore = create((set, get) => ({
   asks: [],
   trades: [],
   klines: [],
+  comparatorPrices: {},
+  setComparatorPrice: (id, bid, ask) => set(s => ({ comparatorPrices: {...s.comparatorPrices, [id]:{bid,ask}} })),
   setLastPx: (px) => set((s) => ({ prevPx: s.lastPx, lastPx: px })),
   setTicker: (ticker) => set({ ticker }),
   setBids: (bids) => set({ bids }),

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useStore } from '../../store'
 import { fmt } from '../../lib/format'
 import styles from './WithdrawModal.module.css'
 
@@ -19,7 +20,7 @@ export function WithdrawModal({ token: initialToken, onClose }) {
   const [step, setStep] = useState(1) // 1=form, 2=confirm
 
   const net = NETWORKS.find(n => n.id === network) || NETWORKS[0]
-  const available = 12000
+  const available = useStore(s => s.balance) || 0
   const netFee = parseFloat(net.fee)
   const receive = Math.max(0, (parseFloat(amount) || 0) - netFee)
 

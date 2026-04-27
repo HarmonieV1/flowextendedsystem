@@ -89,3 +89,9 @@
   .right { padding:0 8px; gap:6px; }
   .connectBtn { padding:4px 10px; font-size:9px; }
 }
+.themeBtn {
+  background:transparent; border:1px solid var(--brd); border-radius:4px;
+  color:var(--txt3); padding:4px 8px; cursor:pointer;
+  font-size:14px; transition:all .15s;
+}
+.themeBtn:hover { border-color:var(--brd2); color:var(--txt); }

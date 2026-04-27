@@ -9,7 +9,7 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('rainbow') || id.includes('wagmi') || id.includes('viem')) return 'wallet'
+            if (id.includes('wagmi') || id.includes('viem') || id.includes('@wagmi')) return 'wallet'
             if (id.includes('react-dom') || id.includes('react/')) return 'react-vendor'
             if (id.includes('zustand') || id.includes('@tanstack')) return 'state'
           }

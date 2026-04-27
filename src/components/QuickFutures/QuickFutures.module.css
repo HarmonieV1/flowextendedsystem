@@ -1,0 +1,57 @@
+.wrap { display:flex; flex-direction:column; height:100%; background:var(--bg1); overflow:hidden; }
+
+/* Long/Short toggle */
+.sides { display:grid; grid-template-columns:1fr 1fr; flex-shrink:0; }
+.sideBtn { padding:11px; border:none; font-family:var(--mono); font-size:13px; font-weight:700; cursor:pointer; background:var(--bg2); color:var(--txt3); border-bottom:2px solid transparent; transition:all .15s; }
+.long.on  { background:rgba(0,229,160,.1);  color:var(--grn); border-bottom-color:var(--grn); }
+.short.on { background:rgba(255,59,92,.1);  color:var(--red); border-bottom-color:var(--red); }
+
+.body { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px; }
+
+/* Switch btn */
+.switchBtn { width:100%; padding:10px; background:rgba(234,179,8,.1); border:1px solid rgba(234,179,8,.3); border-radius:8px; color:#f59e0b; font-family:var(--mono); font-size:12px; font-weight:700; cursor:pointer; }
+
+/* Stats */
+.statsRow { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.statBox { background:var(--bg2); border-radius:8px; padding:10px 12px; }
+.statL { display:block; font-size:9px; color:var(--txt3); text-transform:uppercase; letter-spacing:.5px; margin-bottom:3px; }
+.statV { display:block; font-size:14px; font-weight:700; color:var(--txt); font-family:var(--mono); }
+
+/* Sections */
+.section {}
+.sectionLbl { font-size:10px; color:var(--txt3); margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px; }
+
+/* Leverage grid */
+.leverageGrid { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
+.levBtn { padding:9px 4px; border:1px solid var(--brd); border-radius:6px; background:transparent; color:var(--txt2); font-family:var(--mono); font-size:11px; font-weight:600; cursor:pointer; transition:all .12s; text-align:center; }
+.levOn  { border-color:var(--grn); background:rgba(0,229,160,.1); color:var(--grn); }
+
+/* Collateral grid */
+.colGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+.colBtn { padding:10px 4px; border:1px solid var(--brd); border-radius:6px; background:transparent; color:var(--txt2); font-family:var(--mono); font-size:12px; font-weight:600; cursor:pointer; transition:all .12s; text-align:center; }
+.colOn  { border-color:var(--grn); background:rgba(0,229,160,.12); color:var(--grn); }
+
+/* Summary */
+.summary { background:var(--bg2); border-radius:8px; padding:10px 12px; display:flex; flex-direction:column; gap:6px; }
+.sumRow  { display:flex; justify-content:space-between; align-items:center; font-size:12px; }
+.sumRow span { color:var(--txt3); }
+.sumRow strong { font-family:var(--mono); }
+
+/* Messages */
+.errBox  { padding:8px 12px; background:rgba(255,59,92,.08); border:1px solid rgba(255,59,92,.2); border-radius:6px; font-size:11px; color:var(--red); }
+.okBox   { padding:8px 12px; background:rgba(0,229,160,.08); border:1px solid rgba(0,229,160,.2); border-radius:6px; font-size:11px; color:var(--grn); text-align:center; }
+.approveBtn { width:100%; padding:11px; background:rgba(234,179,8,.1); border:1px solid rgba(234,179,8,.3); border-radius:8px; color:#f59e0b; font-family:var(--mono); font-size:12px; font-weight:700; cursor:pointer; }
+
+/* Exec button */
+.execBtn { padding:15px; border:none; font-family:var(--mono); font-size:14px; font-weight:800; cursor:pointer; flex-shrink:0; margin:0 12px 12px; border-radius:10px; letter-spacing:.3px; transition:all .15s; -webkit-tap-highlight-color:transparent; }
+.execLong  { background:var(--grn); color:#000; }
+.execShort { background:var(--red); color:#fff; }
+.execBtn:disabled { opacity:.5; }
+.execBtn:active { transform:scale(.97); }
+
+/* Not connected */
+.center { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:12px; padding:20px; text-align:center; }
+.icon  { font-size:40px; }
+.title { font-size:17px; font-weight:800; color:var(--txt); }
+.sub   { font-size:12px; color:var(--txt3); }
+.connectBtn { padding:12px 32px; background:var(--grn); border:none; border-radius:8px; color:#000; font-weight:800; font-size:14px; cursor:pointer; }

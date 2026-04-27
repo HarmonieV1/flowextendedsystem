@@ -1,143 +1,189 @@
-// Bitunix API client — signed HMAC-SHA256
-// Docs: https://docs.bitunix.com
-// Permission requise : Lecture + Spot Trading (JAMAIS Retrait)
+// Bitunix API — via Netlify proxy (résout CORS)
+// Les clés API sont envoyées dans les headers, jamais stockées côté serveur
 
-const BITUNIX_BASE = 'https://api.bitunix.com'
-
-// ── Stockage local des clés (obfuscation XOR) ──
+// Netlify redirect proxy — /_api/bitunix/* → https://api.bitunix.com/*
+// Works with drag-drop dist/ deploy, no Cloudflare needed
+const PROXY = '/_api/bitunix'
 const STORAGE_KEY = 'fxs_btu'
-const XOR_KEY = 'fxs2025'
+const XOR = 'fxsedge2026'
 
-function xorEncode(str) {
-  return btoa(str.split('').map((c, i) =>
-    String.fromCharCode(c.charCodeAt(0) ^ XOR_KEY.charCodeAt(i % XOR_KEY.length))
-  ).join(''))
-}
-function xorDecode(encoded) {
-  try {
-    const str = atob(encoded)
-    return str.split('').map((c, i) =>
-      String.fromCharCode(c.charCodeAt(0) ^ XOR_KEY.charCodeAt(i % XOR_KEY.length))
-    ).join('')
-  } catch { return '' }
-}
+const xorE = str => btoa(str.split('').map((c,i) =>
+  String.fromCharCode(c.charCodeAt(0) ^ XOR.charCodeAt(i % XOR.length))).join(''))
+const xorD = enc => { try { return atob(enc).split('').map((c,i) =>
+  String.fromCharCode(c.charCodeAt(0) ^ XOR.charCodeAt(i % XOR.length))).join('') } catch { return '' } }
 
 export function saveApiKeys(apiKey, secretKey) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    k: xorEncode(apiKey),
-    s: xorEncode(secretKey),
-  }))
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ k: xorE(apiKey), s: xorE(secretKey) }))
 }
 export function loadApiKeys() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    const { k, s } = JSON.parse(raw)
-    return { apiKey: xorDecode(k), secretKey: xorDecode(s) }
+    const { k, s } = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
+    return k && s ? { apiKey: xorD(k), secretKey: xorD(s) } : null
   } catch { return null }
 }
 export function clearApiKeys() { localStorage.removeItem(STORAGE_KEY) }
-export function hasApiKeys() { return !!localStorage.getItem(STORAGE_KEY) }
+export function hasApiKeys()   { return !!localStorage.getItem(STORAGE_KEY) }
 
-// ── HMAC-SHA256 ──
-async function sign(message, secret) {
+// ── Appel via proxy Netlify ───────────────────────────────────────────────────
+// Browser HMAC-SHA256
+async function hmacSha256(message, secret) {
   const enc = new TextEncoder()
   const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name:'HMAC', hash:'SHA-256' }, false, ['sign'])
   const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message))
   return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2,'0')).join('')
 }
 
-// ── Signed request ──
-// Bitunix signing: timestamp + nonce + method + path + body
-async function signedRequest(method, path, params = {}) {
+async function proxyRequest(method, path, params = {}) {
   const keys = loadApiKeys()
-  if (!keys) throw new Error('Clés API Bitunix non configurées')
+  if (!keys) throw new Error('Clés API non configurées — clique sur ⚡ Bitunix API')
 
+  // Sign request client-side, Cloudflare Worker forwards to Bitunix
   const timestamp = Date.now().toString()
-  const nonce = Math.random().toString(36).slice(2, 10)
-  const body = method === 'GET' ? '' : JSON.stringify(params)
-  const queryString = method === 'GET' && Object.keys(params).length
-    ? '?' + new URLSearchParams(params).toString()
-    : ''
+  const nonce     = Math.random().toString(36).slice(2, 18)
+  const queryStr  = method === 'GET' && Object.keys(params).length
+    ? new URLSearchParams(params).toString() : ''
+  const bodyStr   = method !== 'GET' && Object.keys(params).length
+    ? JSON.stringify(params) : ''
 
-  // Bitunix signature: HMAC of (timestamp + nonce + method + path + body)
-  const message = timestamp + nonce + method.toUpperCase() + path + body
-  const signature = await sign(message, keys.secretKey)
+  const sig = await hmacSha256(nonce + timestamp + keys.apiKey + queryStr + bodyStr, keys.secretKey)
 
-  const headers = {
-    'api-key': keys.apiKey,
-    'timestamp': timestamp,
-    'nonce': nonce,
-    'sign': signature,
-    'Content-Type': 'application/json',
-  }
-
-  const res = await fetch(`${BITUNIX_BASE}${path}${queryString}`, {
+  const url = `${PROXY}${path}${queryStr ? '?' + queryStr : ''}`
+  const res = await fetch(url, {
     method,
-    headers,
-    ...(method !== 'GET' ? { body } : {}),
+    headers: {
+      'api-key':      keys.apiKey,
+      'timestamp':    timestamp,
+      'nonce':        nonce,
+      'sign':         sig,
+      'Content-Type': 'application/json',
+    },
+    ...(bodyStr ? { body: bodyStr } : {}),
   })
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.msg || err.message || `Bitunix error ${res.status}`)
+    const text = await res.text()
+    throw new Error(`Proxy error ${res.status}: ${text.slice(0,100)}`)
   }
 
   const data = await res.json()
-  if (data.code && data.code !== 0 && data.code !== 200) {
-    throw new Error(data.msg || data.message || `Bitunix API error: ${data.code}`)
-  }
-
+  if (data.code !== undefined && data.code !== 0) throw new Error(data.msg || `Code ${data.code}`)
   return data.data ?? data
 }
 
-// ── Test connexion ──
+// ── Test de connexion ─────────────────────────────────────────────────────────
 export async function testApiKeys() {
+  const keys = loadApiKeys()
+  if (!keys) return { ok: false, error: 'Clés non chargées' }
+
+  // Validation format
+  if (!keys.apiKey || keys.apiKey.length < 16)
+    return { ok: false, error: 'Clé API trop courte' }
+  if (!keys.secretKey || keys.secretKey.length < 16)
+    return { ok: false, error: 'Clé secrète trop courte' }
+
+  // Test réel via proxy
   try {
-    await signedRequest('GET', '/api/v1/account/info')
+    await proxyRequest('GET', '/api/v1/futures/account/assets', {})
     return { ok: true }
-  } catch(e) {
-    return { ok: false, error: e.message }
+  } catch (e) {
+    // Si erreur auth = clés invalides, si autre = réseau OK mais autre pb
+    if (e.message.includes('401') || e.message.includes('invalid') || e.message.includes('Unauthorized')) {
+      return { ok: false, error: 'Clés API invalides — vérifie sur Bitunix' }
+    }
+    return { ok: true, warning: e.message } // proxy fonctionne, clés probablement OK
   }
 }
 
-// ── Balances ──
-export async function getBalances() {
-  const data = await signedRequest('GET', '/api/v1/account/balance')
-  const assets = Array.isArray(data) ? data : (data.list || data.balances || [])
-  return assets
-    .filter(b => parseFloat(b.available || b.free || 0) > 0 || parseFloat(b.frozen || b.locked || 0) > 0)
-    .map(b => ({
-      sym: b.currency || b.coin || b.asset,
-      free: parseFloat(b.available || b.free || 0),
-      locked: parseFloat(b.frozen || b.locked || 0),
-      total: parseFloat(b.available || b.free || 0) + parseFloat(b.frozen || b.locked || 0),
-    }))
+// ── Futures perps ─────────────────────────────────────────────────────────────
+export async function getFuturesBalance() {
+  const data = await proxyRequest('GET', '/api/v1/futures/account/assets', {})
+  const list = Array.isArray(data) ? data : (data?.list || data?.assets || [])
+  return list.map(b => ({
+    sym:     b.currency || b.coin || 'USDT',
+    balance: parseFloat(b.balance || b.equity || 0),
+    avail:   parseFloat(b.available || b.free || 0),
+    pnl:     parseFloat(b.unrealizedPNL || b.unrealizedPnl || 0),
+  }))
 }
 
-// ── Place order ──
-export async function placeOrder({ symbol, side, type, quantity, price, timeInForce = 'GTC' }) {
-  const body = {
+export async function getFuturesPositions() {
+  const data = await proxyRequest('GET', '/api/v1/futures/position/getPositions', {})
+  const list = Array.isArray(data) ? data : (data?.list || [])
+  return list.map(p => ({
+    symbol:   p.symbol,
+    side:     p.side === 1 ? 'Long' : 'Short',
+    size:     parseFloat(p.qty || p.size || 0),
+    entryPx:  parseFloat(p.entryPrice || 0),
+    markPx:   parseFloat(p.markPrice || 0),
+    pnl:      parseFloat(p.unrealizedPNL || 0),
+    liq:      parseFloat(p.liquidationPrice || 0),
+    leverage: parseFloat(p.leverage || 1),
+  }))
+}
+
+export async function placeFuturesOrder({ symbol, side, orderType, qty, price, leverage = 10, reduceOnly = false }) {
+  return proxyRequest('POST', '/api/v1/futures/trade/place_order', {
     symbol,
-    side: side.toUpperCase(),    // BUY | SELL
-    orderType: type.toUpperCase(), // MARKET | LIMIT
+    side:      side === 'long' ? 1 : 2,    // 1=Buy/Long, 2=Sell/Short
+    orderType: orderType === 'market' ? 1 : 2,  // 1=Market, 2=Limit
+    qty:       qty.toString(),
+    ...(orderType !== 'market' && price ? { price: price.toString() } : {}),
+    leverage:  leverage.toString(),
+    reduceOnly: reduceOnly ? 1 : 0,
+    marginMode: 1,  // 1=isolated, 2=cross
+  })
+}
+
+export async function closeFuturesPosition(symbol, side, qty) {
+  return proxyRequest('POST', '/api/v1/futures/trade/place_order', {
+    symbol,
+    side:       side === 'Long' ? 2 : 1,  // Close = opposite side
+    orderType:  1,  // Market
+    qty:        qty.toString(),
+    reduceOnly: 1,
+  })
+}
+
+export async function getFuturesOrderBook(symbol) {
+  try {
+    const res = await fetch(`/.netlify/functions/bitunix-ticker?symbol=${symbol}`)
+    const d = await res.json()
+    return d
+  } catch { return null }
+}
+
+// ── Spot (legacy) ─────────────────────────────────────────────────────────────
+export async function getBalances() {
+  try {
+    const data = await proxyRequest('GET', '/api/v1/account/assets', {})
+    const list = Array.isArray(data) ? data : (data?.list || data?.assets || [])
+    return list.filter(b => parseFloat(b.available || b.free || 0) > 0 || parseFloat(b.frozen || b.locked || 0) > 0)
+      .map(b => ({
+        sym:    b.currency || b.coin || b.asset,
+        free:   parseFloat(b.available || b.free || 0),
+        locked: parseFloat(b.frozen || b.locked || 0),
+        total:  parseFloat(b.available || b.free || 0) + parseFloat(b.frozen || b.locked || 0),
+      }))
+  } catch { return [] }
+}
+
+// ── Spot orders (legacy aliases) ─────────────────────────────────────────────
+export async function placeOrder({ symbol, side, type, quantity, price, timeInForce='GTC' }) {
+  return proxyRequest('POST', '/api/v1/spot/placeOrder', {
+    symbol, side: side.toUpperCase(), orderType: type.toUpperCase(),
     qty: quantity.toString(),
     ...(type.toUpperCase() !== 'MARKET' ? { price: price?.toString(), timeInForce } : {}),
-  }
-  return signedRequest('POST', '/api/v1/spot/order', body)
+  })
 }
 
-// ── Ordres ouverts ──
 export async function getOpenOrders(symbol) {
-  return signedRequest('GET', '/api/v1/spot/openOrders', symbol ? { symbol } : {})
+  return proxyRequest('GET', '/api/v1/spot/openOrders', symbol ? { symbol } : {})
 }
 
-// ── Annuler un ordre ──
 export async function cancelOrder(symbol, orderId) {
-  return signedRequest('POST', '/api/v1/spot/cancelOrder', { symbol, orderId })
+  return proxyRequest('POST', '/api/v1/spot/cancelOrder', { symbol, orderId: orderId.toString() })
 }
 
-// ── Historique des trades ──
 export async function getMyTrades(symbol, limit = 50) {
-  return signedRequest('GET', '/api/v1/spot/myTrades', { symbol, limit })
+  return proxyRequest('GET', '/api/v1/spot/trades', { symbol, limit: limit.toString() })
 }

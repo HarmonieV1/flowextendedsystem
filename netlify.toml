@@ -5,6 +5,18 @@
 [build.environment]
   NODE_VERSION = "22"
 
+
+# ── Bitunix API Proxy (contourne CORS sans Cloudflare Worker) ──────────────────
+[[redirects]]
+  from = "/_api/bitunix/*"
+  to = "https://api.bitunix.com/:splat"
+  status = 200
+  force = true
+  [redirects.headers]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "*"
+
 # SPA routing — all routes serve index.html
 [[redirects]]
   from = "/*"
@@ -15,11 +27,10 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' wss://stream.binance.com wss://stream.bybit.com wss://ws.okx.com https://api.binance.com https://*.supabase.co; img-src 'self' data:"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' wss://stream.binance.com wss://stream.bybit.com wss://ws.okx.com wss://ws.bitget.com wss://stream.bybit.com https://api.binance.com https://fapi.binance.com https://api.bybit.com https://api.bitget.com https://api.bitunix.com https://www.bitunix.com https://clob.polymarket.com https://api.alternative.me https://www.deribit.com https://*.supabase.co; img-src 'self' data:"
 
 # Cache static assets aggressively
 [[headers]]

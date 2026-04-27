@@ -16,28 +16,23 @@ export function LiquidityHeatmap() {
     const cvs = canvasRef.current
     const outer = outerRef.current
     if (!cvs || !outer) return
-    const W = outer.clientWidth
-    const H = outer.clientHeight - 28 // subtract header
+    const W = outer.clientWidth, H = outer.clientHeight - 28
     if (W < 10 || H < 10) return
-
-    cvs.width  = Math.floor(W)
-    cvs.height = Math.floor(H)
-
+    cvs.width = W; cvs.height = H
     if (!bids.length || !asks.length) return
     const ctx = cvs.getContext('2d')
-    ctx.clearRect(0, 0, W, H)
 
-    // Build levels
-    const topAsks = [...asks].sort((a,b) => a[0]-b[0]).slice(0, 15)
-    const topBids = [...bids].sort((a,b) => b[0]-a[0]).slice(0, 15)
+    // Background
+    ctx.fillStyle = '#09090b'
+    ctx.fillRect(0, 0, W, H)
 
+    const topAsks = [...asks].sort((a,b)=>a[0]-b[0]).slice(0,14)
+    const topBids = [...bids].sort((a,b)=>b[0]-a[0]).slice(0,14)
     if (!topBids.length || !topAsks.length) return
 
-    // Find the largest order (institutional wall)
     const bigBid = [...topBids].sort((a,b)=>b[1]-a[1])[0]
     const bigAsk = [...topAsks].sort((a,b)=>b[1]-a[1])[0]
-    setTopBid(bigBid)
-    setTopAsk(bigAsk)
+    setTopBid(bigBid); setTopAsk(bigAsk)
 
     const allLevels = [
       ...topAsks.map(([p,s])=>({p,s,side:'ask'})).reverse(),
@@ -46,67 +41,83 @@ export function LiquidityHeatmap() {
     const maxS = Math.max(...allLevels.map(l=>l.s))
     if (!maxS) return
 
-    const rowH    = Math.floor(H / allLevels.length)
-    const midIdx  = topAsks.length
+    const rowH = Math.max(14, Math.floor(H / allLevels.length))
+    const midIdx = topAsks.length
+    const midY = midIdx * rowH
+    const fontSize = Math.max(9, Math.min(11, rowH - 3))
 
     allLevels.forEach((level, i) => {
       const y = i * rowH
       const intensity = level.s / maxS
-      const w = Math.max(4, intensity * (W * 0.7))
-      const isWall = intensity > 0.6 // institutional wall threshold
+      const barW = Math.max(6, intensity * W * 0.65)
+      const isBid = level.side === 'bid'
+      const isWall = intensity > 0.5
+      const isMid = i === midIdx
 
-      // Gradient bar
-      if (level.side === 'bid') {
-        const g = ctx.createLinearGradient(0, y, w, y)
-        g.addColorStop(0, `rgba(0,229,160,${0.1 + intensity * 0.5})`)
-        g.addColorStop(1, 'transparent')
-        ctx.fillStyle = g
+      // Row background (subtle)
+      ctx.fillStyle = isBid ? 'rgba(0,229,160,0.04)' : 'rgba(255,59,92,0.04)'
+      ctx.fillRect(0, y, W, rowH - 1)
+
+      // Intensity bar with gradient
+      const g = ctx.createLinearGradient(0, 0, barW, 0)
+      if (isBid) {
+        g.addColorStop(0, `rgba(0,229,160,${0.25 + intensity * 0.55})`)
+        g.addColorStop(1, 'rgba(0,229,160,0.02)')
       } else {
-        const g = ctx.createLinearGradient(0, y, w, y)
-        g.addColorStop(0, `rgba(255,59,92,${0.1 + intensity * 0.5})`)
-        g.addColorStop(1, 'transparent')
-        ctx.fillStyle = g
+        g.addColorStop(0, `rgba(255,59,92,${0.25 + intensity * 0.55})`)
+        g.addColorStop(1, 'rgba(255,59,92,0.02)')
       }
-      ctx.fillRect(0, y, w, rowH - 1)
+      ctx.fillStyle = g
+      ctx.fillRect(0, y, barW, rowH - 1)
 
-      // Wall glow for big orders
+      // Wall highlight
       if (isWall) {
-        ctx.shadowColor = level.side === 'bid' ? 'rgba(0,229,160,0.4)' : 'rgba(255,59,92,0.4)'
-        ctx.shadowBlur = 8
-        ctx.fillStyle = level.side === 'bid' ? 'rgba(0,229,160,0.15)' : 'rgba(255,59,92,0.15)'
-        ctx.fillRect(0, y, w * 1.1, rowH - 1)
+        ctx.shadowColor = isBid ? '#00e5a0' : '#ff3b5c'
+        ctx.shadowBlur = 6
+        ctx.fillStyle = isBid ? 'rgba(0,229,160,0.12)' : 'rgba(255,59,92,0.12)'
+        ctx.fillRect(0, y, barW, rowH - 1)
         ctx.shadowBlur = 0
+        // Left border accent
+        ctx.fillStyle = isBid ? 'rgba(0,229,160,0.9)' : 'rgba(255,59,92,0.9)'
+        ctx.fillRect(0, y, 2, rowH - 1)
       }
 
-      // Price label
-      ctx.font = `${rowH > 12 ? 9 : 8}px JetBrains Mono`
-      ctx.textAlign = 'right'
-      ctx.fillStyle = i === midIdx ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)'
-      ctx.fillText(fmtPx(level.p), W - 4, y + rowH - 2)
+      // Separator line
+      ctx.fillStyle = 'rgba(255,255,255,0.04)'
+      ctx.fillRect(0, y + rowH - 1, W, 1)
 
-      // Size for walls
-      if (isWall && rowH > 10) {
+      // Price label — right aligned
+      ctx.font = `${isWall ? 'bold ' : ''}${fontSize}px JetBrains Mono`
+      ctx.textAlign = 'right'
+      ctx.fillStyle = isMid ? '#fff' : isWall
+        ? (isBid ? '#00e5a0' : '#ff3b5c')
+        : 'rgba(255,255,255,0.7)'
+      ctx.fillText(fmtPx(level.p), W - 6, y + rowH - 4)
+
+      // Size label for walls — left aligned
+      if (isWall && rowH >= 12) {
         ctx.textAlign = 'left'
-        ctx.fillStyle = level.side === 'bid' ? 'rgba(0,229,160,0.8)' : 'rgba(255,59,92,0.8)'
-        ctx.fillText(`${level.s.toFixed(2)}`, 4, y + rowH - 2)
+        ctx.font = `bold ${fontSize - 1}px JetBrains Mono`
+        ctx.fillStyle = isBid ? 'rgba(0,229,160,0.85)' : 'rgba(255,59,92,0.85)'
+        const sizeStr = level.s >= 1 ? level.s.toFixed(2) : level.s.toFixed(4)
+        ctx.fillText(sizeStr, 6, y + rowH - 4)
       }
     })
 
-    // Mid line
-    const midY = midIdx * rowH
-    ctx.setLineDash([3, 3])
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)'
+    // Mid spread line
+    ctx.setLineDash([4, 4])
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)'
     ctx.lineWidth = 1
-    ctx.beginPath(); ctx.moveTo(0, midY); ctx.lineTo(W * 0.75, midY); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(0, midY); ctx.lineTo(W, midY); ctx.stroke()
     ctx.setLineDash([])
 
-    // Spread label
+    // Spread text
     if (topBids[0] && topAsks[0]) {
       const spread = ((topAsks[0][0] - topBids[0][0]) / topBids[0][0] * 100).toFixed(4)
-      ctx.font = '8px JetBrains Mono'
-      ctx.fillStyle = 'rgba(255,255,255,0.35)'
-      ctx.textAlign = 'left'
-      ctx.fillText(`spread ${spread}%`, 4, midY - 2)
+      ctx.font = 'bold 9px JetBrains Mono'
+      ctx.fillStyle = 'rgba(255,255,255,0.5)'
+      ctx.textAlign = 'center'
+      ctx.fillText(`spread ${spread}%`, W/2, midY - 3)
     }
   }
 

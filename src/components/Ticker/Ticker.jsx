@@ -10,6 +10,13 @@ const ALL_PAIRS = [
   'PEPEUSDT','WIFUSDT','BONKUSDT','JUPUSDT','RENDERUSDT','FETUSDT',
 ]
 
+function useTheme() {
+  const [dark, setDark] = useState(() => localStorage.getItem('fxs_theme') !== 'light')
+  const toggle = () => setDark(d => { const nd=!d; localStorage.setItem('fxs_theme',nd?'dark':'light'); document.documentElement.setAttribute('data-theme',nd?'dark':'light'); return nd })
+  useEffect(() => { document.documentElement.setAttribute('data-theme',dark?'dark':'light') }, [])
+  return [dark, toggle]
+}
+
 export function Ticker({ onOpenWallet, wsLive }) {
   const pair = useStore(s => s.pair)
   const setPair = useStore(s => s.setPair)
@@ -23,6 +30,7 @@ export function Ticker({ onOpenWallet, wsLive }) {
   const [ticker, setTicker] = useState({})
   const [pairSearch, setPairSearch] = useState('')
   const [pairModalOpen, setPairModalOpen] = useState(false)
+  const [dark, toggleTheme] = useTheme()
   const searchRef = useRef(null)
 
   // Ticker WS pour la paire active
@@ -57,7 +65,7 @@ export function Ticker({ onOpenWallet, wsLive }) {
     <>
       <div className={styles.header}>
         {/* Logo */}
-        <div className={styles.logo}>FXS <span className={styles.logoFlow}>Flow</span></div>
+        <div className={styles.logo}>FXS<span className={styles.logoFlow}>EDGE</span></div>
 
         {/* Pair selector button */}
         <button className={styles.pairBtn} onClick={() => setPairModalOpen(true)}>
@@ -67,20 +75,34 @@ export function Ticker({ onOpenWallet, wsLive }) {
 
         {/* Main nav — Spot / Futures / Swap */}
         <nav className={styles.mainnav}>
-          {['Spot','Futures','Swap'].map(t => (
+          {['Futures','Spot'].map(t => (
             <button
               key={t}
               className={`${styles.navBtn} ${tab===t&&view==='trade'?styles.navOn:''}`}
               onClick={() => { setView('trade'); setTab(t) }}
             >{t}</button>
           ))}
+          <button
+            className={`${styles.navBtn} ${view==='sizer'?styles.navOn:''}`}
+            onClick={() => setView('sizer')}
+          >📐 Sizer</button>
           <div className={styles.navSep} />
           <button className={`${styles.navBtn} ${view==='multi'?styles.navOn:''}`} onClick={() => setView('multi')}>Multi ⊞</button>
+          <button className={`${styles.navBtn} ${view==='copy'?styles.navOn:''}`} onClick={() => setView('copy')}>Copy ⟳</button>
+          <button className={`${styles.navBtn} ${view==='manifesto'?styles.navOn:''}`} onClick={() => setView('manifesto')}>Manifesto</button>
+          <button className={`${styles.navBtn} ${view==='intel'?styles.navOn:''}`} onClick={() => setView('intel')}>📡 Intel</button>
+          <button className={`${styles.navBtn} ${view==='liqmap'?styles.navOn:''}`} onClick={() => setView('liqmap')}>💧 Liq Map</button>
+          <button className={`${styles.navBtn} ${view==='journal'?styles.navOn:''}`} onClick={() => setView('journal')}>📓 Journal</button>
           <button className={`${styles.navBtn} ${view==='wallet'?styles.navOn:''}`} onClick={() => setView('wallet')}>Portfolio</button>
         </nav>
 
         {/* Right — WS status + wallet */}
         <div className={styles.right}>
+          <button
+            className={styles.themeBtn}
+            onClick={toggleTheme}
+            title={dark ? 'Mode clair' : 'Mode sombre'}
+          >{dark ? '☀' : '🌙'}</button>
           {wsLive && <span className={styles.wsPill}><span className={styles.wsDot}/>LIVE</span>}
           <button className={styles.connectBtn} onClick={onOpenWallet}>
             {connected ? `${useStore.getState().address?.slice(0,6)}...` : 'Connect Wallet'}
