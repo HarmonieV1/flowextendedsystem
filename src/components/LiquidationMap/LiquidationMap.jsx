@@ -90,18 +90,17 @@ export function LiquidationMap() {
 
   useEffect(() => { load(); const t = setInterval(load, 60000); return () => clearInterval(t) }, [load])
 
-  // Draw canvas
+  // Draw canvas — ResizeObserver ensures correct sizing after mount
   useEffect(() => {
     const canvas = canvasRef.current
     const wrap   = wrapRef.current
     if (!canvas || !wrap || !data) return
 
-    const rect = wrap.getBoundingClientRect()
-    const W = rect.width || 600
-    const H = rect.height || 300
-    if (canvas.width !== W || canvas.height !== H) {
-      canvas.width = W; canvas.height = H
-    }
+    const draw = () => {
+    const W = Math.max(wrap.offsetWidth || 600, 200)
+    const H = Math.max(wrap.offsetHeight || 280, 200)
+    canvas.width  = W
+    canvas.height = H
 
     const ctx = canvas.getContext('2d')
     ctx.fillStyle = '#09090b'
@@ -190,6 +189,11 @@ export function LiquidationMap() {
     ctx.textAlign = 'right'
     ctx.fillText('SHORTS liquidés →', W - 10, 16)
 
+    } // end draw()
+    draw()
+    const ro = new ResizeObserver(() => draw())
+    ro.observe(wrap)
+    return () => ro.disconnect()
   }, [data, lastPx])
 
   const sym = SYMBOLS[pair] || pair.replace('USDT','')
