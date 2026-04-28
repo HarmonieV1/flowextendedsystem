@@ -1,11 +1,13 @@
-// ── 0x Swap API — proxy via fxsedge-proxy.netlify.app ────────────────────────
-// Site dédié avec Netlify Functions déployées proprement
-// Revenue: 0.5% collecté automatiquement on-chain à chaque swap
+// ── 0x Swap API — appel direct navigateur ────────────────────────────────────
+// La clé API est dans le code (publique, limitée à notre domaine sur dashboard 0x)
+// Revenue: swapFeeRecipient reçoit 0.5% de chaque swap on-chain automatiquement
 
-const PROXY = 'https://fxsedge-proxy.netlify.app/swap'
+const ZX_KEY      = 'bb02023d-a2d9-4961-8206-ecab0a7e46b6'
+const ZX_PRICE    = 'https://api.0x.org/swap/allowance-holder/price'
+const ZX_QUOTE    = 'https://api.0x.org/swap/allowance-holder/quote'
 
 export const FEE_RECIPIENT = '0x12B31352569DDC3a6D4254bc7e22fCB2B75F42b1'
-export const FEE_BPS       = 50  // 0.5%
+export const FEE_BPS       = 50
 export const NATIVE_TOKEN  = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
 
 export const CHAINS = {
@@ -41,34 +43,44 @@ export const POPULAR_TOKENS = {
   ],
 }
 
-async function call0x(type, params) {
-  const qs = new URLSearchParams({ ...params, _type: type }).toString()
-  const r  = await fetch(`${PROXY}?${qs}`, { signal: AbortSignal.timeout(12000) })
+async function zxCall(endpoint, params) {
+  const qs = new URLSearchParams(params).toString()
+  // Appel direct — la clé API dans le header est nécessaire
+  // Si CORS bloque, on retombe sur le mode "no-cors" qui retourne opaque response
+  const r = await fetch(`${endpoint}?${qs}`, {
+    headers: {
+      '0x-api-key': ZX_KEY,
+      '0x-version': 'v2',
+    },
+    signal: AbortSignal.timeout(12000),
+  })
   const data = await r.json()
-  if (!r.ok) throw new Error(data.reason || data.validationErrors?.[0]?.reason || data.message || `Erreur ${r.status}`)
+  if (!r.ok) throw new Error(
+    data.reason || data.validationErrors?.[0]?.reason || data.message || `Erreur ${r.status}`
+  )
   return data
 }
 
 export async function getPrice({ chainId, sellToken, buyToken, sellAmount, taker }) {
-  return call0x('price', {
+  return zxCall(ZX_PRICE, {
     chainId: String(chainId), sellToken, buyToken,
     sellAmount: String(sellAmount),
     swapFeeRecipient: FEE_RECIPIENT,
-    swapFeeBps:       String(FEE_BPS),
-    swapFeeToken:     buyToken,
+    swapFeeBps: String(FEE_BPS),
+    swapFeeToken: buyToken,
     ...(taker ? { taker } : {}),
   })
 }
 
 export async function getQuote({ chainId, sellToken, buyToken, sellAmount, taker, slippageBps = 50 }) {
   if (!taker) throw new Error('Wallet non connecté')
-  return call0x('quote', {
+  return zxCall(ZX_QUOTE, {
     chainId: String(chainId), sellToken, buyToken,
     sellAmount: String(sellAmount), taker,
     slippageBps: String(slippageBps),
     swapFeeRecipient: FEE_RECIPIENT,
-    swapFeeBps:       String(FEE_BPS),
-    swapFeeToken:     buyToken,
+    swapFeeBps: String(FEE_BPS),
+    swapFeeToken: buyToken,
   })
 }
 
