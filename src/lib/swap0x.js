@@ -1,13 +1,12 @@
-// ── 0x Swap API ─────────────────────────────────────────────────────────────
-// Proxy via Netlify redirect - clé API en query param pour passer le redirect
+// ── 0x Swap API — proxy via fxsedge-proxy.netlify.app ────────────────────────
+// Site dédié avec Netlify Functions déployées proprement
 // Revenue: 0.5% collecté automatiquement on-chain à chaque swap
 
-const ZX_KEY       = 'bb02023d-a2d9-4961-8206-ecab0a7e46b6'
-const ZX_BASE      = 'https://api.0x.org'
+const PROXY = 'https://fxsedge-proxy.netlify.app/swap'
+
 export const FEE_RECIPIENT = '0x12B31352569DDC3a6D4254bc7e22fCB2B75F42b1'
 export const FEE_BPS       = 50  // 0.5%
-
-export const NATIVE_TOKEN = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
+export const NATIVE_TOKEN  = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
 
 export const CHAINS = {
   1:     { name:'Ethereum', symbol:'ETH',   explorer:'https://etherscan.io' },
@@ -42,27 +41,17 @@ export const POPULAR_TOKENS = {
   ],
 }
 
-async function zxFetch(endpoint, params) {
-  // Try proxy first, fall back to direct (for local dev)
-  const qs = new URLSearchParams({
-    ...params,
-    // Clé API en query param - contourne le blocage CORS des headers custom
-  }).toString()
-
-  // Via notre proxy Netlify Function (headers ajoutés côté serveur)
-  let url = `/.netlify/functions/${endpoint === 'price' ? 'swap-price' : 'swap-quote'}?${qs}`
-
-  const r = await fetch(url, { signal: AbortSignal.timeout(12000) })
+async function call0x(type, params) {
+  const qs = new URLSearchParams({ ...params, _type: type }).toString()
+  const r  = await fetch(`${PROXY}?${qs}`, { signal: AbortSignal.timeout(12000) })
   const data = await r.json()
   if (!r.ok) throw new Error(data.reason || data.validationErrors?.[0]?.reason || data.message || `Erreur ${r.status}`)
   return data
 }
 
 export async function getPrice({ chainId, sellToken, buyToken, sellAmount, taker }) {
-  return zxFetch('price', {
-    chainId: String(chainId),
-    sellToken,
-    buyToken,
+  return call0x('price', {
+    chainId: String(chainId), sellToken, buyToken,
     sellAmount: String(sellAmount),
     swapFeeRecipient: FEE_RECIPIENT,
     swapFeeBps:       String(FEE_BPS),
@@ -73,12 +62,9 @@ export async function getPrice({ chainId, sellToken, buyToken, sellAmount, taker
 
 export async function getQuote({ chainId, sellToken, buyToken, sellAmount, taker, slippageBps = 50 }) {
   if (!taker) throw new Error('Wallet non connecté')
-  return zxFetch('quote', {
-    chainId:    String(chainId),
-    sellToken,
-    buyToken,
-    sellAmount: String(sellAmount),
-    taker,
+  return call0x('quote', {
+    chainId: String(chainId), sellToken, buyToken,
+    sellAmount: String(sellAmount), taker,
     slippageBps: String(slippageBps),
     swapFeeRecipient: FEE_RECIPIENT,
     swapFeeBps:       String(FEE_BPS),
