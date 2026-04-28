@@ -1,15 +1,16 @@
-// ── 0x Swap API — appel direct navigateur ────────────────────────────────────
-// La clé API est dans le code (publique, limitée à notre domaine sur dashboard 0x)
-// Revenue: swapFeeRecipient reçoit 0.5% de chaque swap on-chain automatiquement
+// ── Paraswap API v5 — swap natif browser ─────────────────────────────────────
+// Pas de clé API, CORS ouvert, utilisé par MetaMask / Ledger / Aave
+// Fee: partnerAddress + partnerFeeBps embarqués dans chaque transaction
+// Revenue: 0.5% prélevé on-chain automatiquement à chaque swap
 
-const ZX_KEY      = 'bb02023d-a2d9-4961-8206-ecab0a7e46b6'
-const ZX_PRICE    = 'https://api.0x.org/swap/allowance-holder/price'
-const ZX_QUOTE    = 'https://api.0x.org/swap/allowance-holder/quote'
+const PS_BASE    = 'https://apiv5.paraswap.io'
+const PARTNER    = 'fxsedge'
 
 export const FEE_RECIPIENT = '0x12B31352569DDC3a6D4254bc7e22fCB2B75F42b1'
-export const FEE_BPS       = 50
+export const FEE_BPS       = 50  // 0.5%
 export const NATIVE_TOKEN  = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
 
+// Chain IDs Paraswap: 1=ETH, 10=Optimism, 56=BSC, 137=Polygon, 42161=Arbitrum, 8453=Base
 export const CHAINS = {
   1:     { name:'Ethereum', symbol:'ETH',   explorer:'https://etherscan.io' },
   42161: { name:'Arbitrum', symbol:'ETH',   explorer:'https://arbiscan.io' },
@@ -43,45 +44,73 @@ export const POPULAR_TOKENS = {
   ],
 }
 
-async function zxCall(endpoint, params) {
-  const qs = new URLSearchParams(params).toString()
-  // Appel direct — la clé API dans le header est nécessaire
-  // Si CORS bloque, on retombe sur le mode "no-cors" qui retourne opaque response
-  const r = await fetch(`${endpoint}?${qs}`, {
-    headers: {
-      '0x-api-key': ZX_KEY,
-      '0x-version': 'v2',
-    },
-    signal: AbortSignal.timeout(12000),
+/**
+ * Étape 1 — Obtenir le meilleur prix (indicatif)
+ * Appel direct browser, CORS ouvert, pas de clé API
+ */
+export async function getPrice({ chainId, sellToken, buyToken, sellAmount }) {
+  const params = new URLSearchParams({
+    srcToken:    sellToken,
+    destToken:   buyToken,
+    amount:      String(sellAmount),
+    srcDecimals: String(getDecimals(chainId, sellToken)),
+    destDecimals:String(getDecimals(chainId, buyToken)),
+    side:        'SELL',
+    network:     String(chainId),
+    partner:     PARTNER,
   })
-  const data = await r.json()
-  if (!r.ok) throw new Error(
-    data.reason || data.validationErrors?.[0]?.reason || data.message || `Erreur ${r.status}`
-  )
-  return data
+  const r = await fetch(`${PS_BASE}/prices/?${params}`, {
+    signal: AbortSignal.timeout(10000),
+  })
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}))
+    throw new Error(e.error || `Erreur prix ${r.status}`)
+  }
+  return r.json()  // { priceRoute: { destAmount, bestRoute, ... } }
 }
 
-export async function getPrice({ chainId, sellToken, buyToken, sellAmount, taker }) {
-  return zxCall(ZX_PRICE, {
-    chainId: String(chainId), sellToken, buyToken,
-    sellAmount: String(sellAmount),
-    swapFeeRecipient: FEE_RECIPIENT,
-    swapFeeBps: String(FEE_BPS),
-    swapFeeToken: buyToken,
-    ...(taker ? { taker } : {}),
-  })
-}
-
-export async function getQuote({ chainId, sellToken, buyToken, sellAmount, taker, slippageBps = 50 }) {
+/**
+ * Étape 2 — Construire la transaction (avec fee FXSEDGE embarquée)
+ * Appel direct browser, CORS ouvert
+ */
+export async function buildTx({ chainId, priceRoute, taker, slippageBps = 50 }) {
   if (!taker) throw new Error('Wallet non connecté')
-  return zxCall(ZX_QUOTE, {
-    chainId: String(chainId), sellToken, buyToken,
-    sellAmount: String(sellAmount), taker,
-    slippageBps: String(slippageBps),
-    swapFeeRecipient: FEE_RECIPIENT,
-    swapFeeBps: String(FEE_BPS),
-    swapFeeToken: buyToken,
-  })
+
+  const body = {
+    srcToken:       priceRoute.srcToken,
+    destToken:      priceRoute.destToken,
+    srcAmount:      priceRoute.srcAmount,
+    destAmount:     priceRoute.destAmount,
+    slippage:       slippageBps / 100,       // Paraswap prend % pas bps
+    priceRoute,
+    userAddress:    taker,
+    // Fee FXSEDGE — prélevée on-chain automatiquement
+    partnerAddress: FEE_RECIPIENT,
+    partnerFeeBps:  FEE_BPS,
+    partner:        PARTNER,
+    takeSurplus:    false,
+  }
+
+  const r = await fetch(
+    `${PS_BASE}/transactions/${chainId}?ignoreChecks=true`,
+    {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+      signal:  AbortSignal.timeout(12000),
+    }
+  )
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}))
+    throw new Error(e.error || `Erreur tx ${r.status}`)
+  }
+  return r.json()  // { from, to, value, data, gas, ... }
+}
+
+// Helper — retrouver les décimales d'un token
+function getDecimals(chainId, address) {
+  const tokens = POPULAR_TOKENS[chainId] || []
+  return tokens.find(t => t.address.toLowerCase() === address.toLowerCase())?.decimals ?? 18
 }
 
 export function fmtTokenAmount(raw, decimals) {
