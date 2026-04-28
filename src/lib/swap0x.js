@@ -58,6 +58,10 @@ export async function getPrice({ chainId, sellToken, buyToken, sellAmount }) {
     side:        'SELL',
     network:     String(chainId),
     partner:     PARTNER,
+    partnerAddress: FEE_RECIPIENT,
+    partnerFeeBps:  String(FEE_BPS),
+    // Exclure les routes qui ne supportent pas les fees partenaire
+    excludeContractMethodsWithoutFeeModel: 'true',
   })
   const r = await fetch(`${PS_BASE}/prices/?${params}`, {
     signal: AbortSignal.timeout(10000),
@@ -87,13 +91,15 @@ export async function buildTx({ chainId, priceRoute, taker, slippageBps = 50 }) 
     srcToken:       priceRoute.srcToken,
     destToken:      priceRoute.destToken,
     srcAmount:      priceRoute.srcAmount,
-    destAmount:     destAmountMin,           // minimum reçu (pas de slippage séparé)
+    destAmount:     destAmountMin,
     priceRoute,
     userAddress:    taker,
-    // Fee FXSEDGE — prélevée on-chain automatiquement
+    // ← Fee FXSEDGE collectée on-chain automatiquement
+    // takeSurplus=true est OBLIGATOIRE pour que Paraswap prélève la fee
     partnerAddress: FEE_RECIPIENT,
     partnerFeeBps:  FEE_BPS,
     partner:        PARTNER,
+    takeSurplus:    true,
   }
 
   const r = await fetch(
