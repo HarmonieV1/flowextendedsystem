@@ -1,23 +1,34 @@
 import { createConfig, http } from 'wagmi'
-import { mainnet, arbitrum, base } from 'wagmi/chains'
-import { injected, coinbaseWallet } from 'wagmi/connectors'
+import { mainnet, arbitrum, base, polygon, optimism } from 'wagmi/chains'
+import { injected, coinbaseWallet, walletConnect } from 'wagmi/connectors'
 
-// IMPORTANT: On utilise injected() uniquement
-// metaMask() importe @metamask/connect-evm (~900kb) qui fragmente le bundle
-// injected() détecte MetaMask, Rabby, et tout wallet browser automatiquement
-// Aucune dépendance externe = bundle mobile léger
+// injected() détecte automatiquement:
+// MetaMask, Phantom (EVM), Rabby, Brave Wallet, Trust Wallet, Frame, etc.
+// coinbaseWallet = Coinbase Wallet + Base Wallet
+// walletConnect = 400+ wallets dont Ledger, Rainbow, Zerion, Argent...
+
+const WC_PROJECT_ID = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID
+  || '17af070cda2337317b0ca350f879c1e7'
 
 export const wagmiConfig = createConfig({
-  chains: [mainnet, arbitrum, base],
+  chains: [arbitrum, mainnet, base, polygon, optimism],
   transports: {
-    [mainnet.id]:  http('https://cloudflare-eth.com'),
-    [arbitrum.id]: http('https://arb1.arbitrum.io/rpc'),
-    [base.id]:     http('https://mainnet.base.org'),
+    [arbitrum.id]:  http('https://arb1.arbitrum.io/rpc'),
+    [mainnet.id]:   http('https://cloudflare-eth.com'),
+    [base.id]:      http('https://mainnet.base.org'),
+    [polygon.id]:   http('https://polygon-rpc.com'),
+    [optimism.id]:  http('https://mainnet.optimism.io'),
   },
   connectors: [
-    injected({ shimDisconnect: true }),
-    coinbaseWallet({ appName: 'FXSEDGE' }),
+    injected({ shimDisconnect: true }),  // MetaMask, Phantom EVM, Rabby, Brave, Trust...
+    coinbaseWallet({ appName: 'FXSEDGE', appLogoUrl: 'https://fxsedge.netlify.app/favicon.svg' }),
+    walletConnect({ projectId: WC_PROJECT_ID, metadata: {
+      name: 'FXSEDGE',
+      description: 'Terminal de trading no-KYC',
+      url: 'https://fxsedge.netlify.app',
+      icons: ['https://fxsedge.netlify.app/favicon.svg'],
+    }}),
   ],
 })
 
-export const SUPPORTED_CHAINS = [mainnet, arbitrum, base]
+export const SUPPORTED_CHAINS = [arbitrum, mainnet, base, polygon, optimism]
