@@ -1,7 +1,9 @@
-// ── 0x Swap via Netlify Function proxy ───────────────────────────────────────
-// Browser → /.netlify/functions/swap-price → 0x API (CORS fix)
-// Revenue: swapFeeRecipient reçoit 0.5% de chaque swap on-chain automatiquement
+// ── 0x Swap API ─────────────────────────────────────────────────────────────
+// Proxy via Netlify redirect - clé API en query param pour passer le redirect
+// Revenue: 0.5% collecté automatiquement on-chain à chaque swap
 
+const ZX_KEY       = 'bb02023d-a2d9-4961-8206-ecab0a7e46b6'
+const ZX_BASE      = 'https://api.0x.org'
 export const FEE_RECIPIENT = '0x12B31352569DDC3a6D4254bc7e22fCB2B75F42b1'
 export const FEE_BPS       = 50  // 0.5%
 
@@ -40,12 +42,24 @@ export const POPULAR_TOKENS = {
   ],
 }
 
-// Proxy via Netlify Function — résout le CORS 0x
-const PROXY_PRICE = '/api/swap-price'
-const PROXY_QUOTE = '/api/swap-quote'
+async function zxFetch(endpoint, params) {
+  // Try proxy first, fall back to direct (for local dev)
+  const qs = new URLSearchParams({
+    ...params,
+    // Clé API en query param - contourne le blocage CORS des headers custom
+  }).toString()
+
+  // Via notre proxy Netlify Function (headers ajoutés côté serveur)
+  let url = `/.netlify/functions/${endpoint === 'price' ? 'swap-price' : 'swap-quote'}?${qs}`
+
+  const r = await fetch(url, { signal: AbortSignal.timeout(12000) })
+  const data = await r.json()
+  if (!r.ok) throw new Error(data.reason || data.validationErrors?.[0]?.reason || data.message || `Erreur ${r.status}`)
+  return data
+}
 
 export async function getPrice({ chainId, sellToken, buyToken, sellAmount, taker }) {
-  const params = new URLSearchParams({
+  return zxFetch('price', {
     chainId: String(chainId),
     sellToken,
     buyToken,
@@ -55,19 +69,11 @@ export async function getPrice({ chainId, sellToken, buyToken, sellAmount, taker
     swapFeeToken:     buyToken,
     ...(taker ? { taker } : {}),
   })
-
-  const r = await fetch(`${PROXY_PRICE}?${params}`, {
-    signal: AbortSignal.timeout(10000),
-  })
-  const data = await r.json()
-  if (!r.ok) throw new Error(data.reason || data.message || `Erreur ${r.status}`)
-  return data
 }
 
 export async function getQuote({ chainId, sellToken, buyToken, sellAmount, taker, slippageBps = 50 }) {
   if (!taker) throw new Error('Wallet non connecté')
-
-  const params = new URLSearchParams({
+  return zxFetch('quote', {
     chainId:    String(chainId),
     sellToken,
     buyToken,
@@ -78,13 +84,6 @@ export async function getQuote({ chainId, sellToken, buyToken, sellAmount, taker
     swapFeeBps:       String(FEE_BPS),
     swapFeeToken:     buyToken,
   })
-
-  const r = await fetch(`${PROXY_QUOTE}?${params}`, {
-    signal: AbortSignal.timeout(12000),
-  })
-  const data = await r.json()
-  if (!r.ok) throw new Error(data.reason || data.message || `Erreur ${r.status}`)
-  return data
 }
 
 export function fmtTokenAmount(raw, decimals) {
@@ -98,7 +97,7 @@ export function fmtTokenAmount(raw, decimals) {
 
 export function toBaseUnits(amount, decimals) {
   if (!amount || isNaN(+amount)) return 0n
-  const [int, frac = ''] = String(amount).split('.')
+  const [int = '0', frac = ''] = String(amount).split('.')
   const pad = frac.padEnd(decimals, '0').slice(0, decimals)
   return BigInt(int) * BigInt(10 ** decimals) + BigInt(pad || 0)
 }
