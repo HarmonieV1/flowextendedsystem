@@ -24,6 +24,7 @@ import { DeltaFlow } from './components/DeltaFlow/DeltaFlow'
 import { FundingRates } from './components/FundingRates/FundingRates'
 import { OptionsFlow } from './components/OptionsFlow/OptionsFlow'
 // New intel components are imported via MarketIntel
+import { SwapWidget } from './components/SwapWidget/SwapWidget'
 import { HarmonicScanner } from './components/HarmonicScanner/HarmonicScanner'
 import { NewsTracker } from './components/NewsTracker/NewsTracker'
 import { LiquidationMap } from './components/LiquidationMap/LiquidationMap'
@@ -42,7 +43,7 @@ import styles from './App.module.css'
 
 // ── Composants définis HORS de App() — sinon remount à chaque render ──
 function SpotForm({ onOpenWallet, onApiKey }) {
-  return <Spot onOpenWallet={onOpenWallet} />
+  return <SwapWidget onOpenWallet={onOpenWallet} />
 }
 function FuturesForm({ onOpenWallet }) {
   return <Futures onOpenWallet={onOpenWallet} />
@@ -140,6 +141,9 @@ export default function App() {
       {/* PriceAlerts integrated into Comparator component */}
 
       {/* ── TRADE VIEW ── */}
+      {view === 'spot' && (
+        <div className={styles.tradePanel}><SwapWidget onOpenWallet={openWallet}/></div>
+      )}
       {view === 'trade' && (
         <div className={styles.tradeView}>
 
