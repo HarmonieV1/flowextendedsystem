@@ -41,8 +41,8 @@ export const POPULAR_TOKENS = {
 }
 
 // Proxy via Netlify Function — résout le CORS 0x
-const PROXY_PRICE = '/.netlify/functions/swap-price'
-const PROXY_QUOTE = '/.netlify/functions/swap-quote'
+const PROXY_PRICE = '/api/swap-price'
+const PROXY_QUOTE = '/api/swap-quote'
 
 export async function getPrice({ chainId, sellToken, buyToken, sellAmount, taker }) {
   const params = new URLSearchParams({
