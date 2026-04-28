@@ -21,10 +21,9 @@ export function OrderBookHeatmap() {
     const wrap   = wrapRef.current
     if (!canvas || !wrap) return
 
-    // Resize canvas to container
-    const rect = wrap.getBoundingClientRect()
-    const W = wrap.offsetWidth || wrap.clientWidth || 600
-    const H = wrap.offsetHeight || wrap.clientHeight || 280
+    // Resize canvas — offsetWidth works before paint, getBoundingClientRect doesn't
+    const W = Math.max(wrap.offsetWidth || 600, 200)
+    const H = Math.max(wrap.offsetHeight || 280, 200)
     if (canvas.width !== W || canvas.height !== H) {
       canvas.width  = W
       canvas.height = H
@@ -138,6 +137,9 @@ export function OrderBookHeatmap() {
 
   // Animation loop
   useEffect(() => {
+    // Force initial size via ResizeObserver before first frame
+    const ro = new ResizeObserver(() => draw())
+    ro.observe(wrap)
     const loop = () => { draw(); frameRef.current = requestAnimationFrame(loop) }
     frameRef.current = requestAnimationFrame(loop)
     return () => { if(frameRef.current) cancelAnimationFrame(frameRef.current) }
