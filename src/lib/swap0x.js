@@ -76,19 +76,24 @@ export async function getPrice({ chainId, sellToken, buyToken, sellAmount }) {
 export async function buildTx({ chainId, priceRoute, taker, slippageBps = 50 }) {
   if (!taker) throw new Error('Wallet non connecté')
 
+  // Paraswap: destAmount = montant minimum avec slippage appliqué
+  // Ne pas passer slippage ET destAmount en même temps
+  const slippagePct  = slippageBps / 10000  // 50 bps → 0.005
+  const destAmountMin = String(
+    BigInt(priceRoute.destAmount) * BigInt(Math.floor((1 - slippagePct) * 10000)) / 10000n
+  )
+
   const body = {
     srcToken:       priceRoute.srcToken,
     destToken:      priceRoute.destToken,
     srcAmount:      priceRoute.srcAmount,
-    destAmount:     priceRoute.destAmount,
-    slippage:       slippageBps / 100,       // Paraswap prend % pas bps
+    destAmount:     destAmountMin,           // minimum reçu (pas de slippage séparé)
     priceRoute,
     userAddress:    taker,
     // Fee FXSEDGE — prélevée on-chain automatiquement
     partnerAddress: FEE_RECIPIENT,
     partnerFeeBps:  FEE_BPS,
     partner:        PARTNER,
-    takeSurplus:    false,
   }
 
   const r = await fetch(
