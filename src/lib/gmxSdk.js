@@ -75,10 +75,10 @@ export async function openPosition({ sdk, pair, isLong, collateralUsd, leverage,
   sdk.setAccount(account)
 
   // collateral en USDC (6 décimales)
-  const collateralAmount = BigInt(Math.floor(collateralUsd * 1e6))
+  const collateralAmount = BigInt(Math.floor(Number(collateralUsd) * 1e6))
 
   // leverage en GMX format: 10x = 100000n (10 * 10000)
-  const leverageBigInt = BigInt(leverage * 10000)
+  const leverageBigInt = BigInt(Math.floor(leverage)) * 10000n
 
   await sdk.orders.long({
     payAmount:             collateralAmount,
