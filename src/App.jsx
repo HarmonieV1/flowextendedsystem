@@ -8,6 +8,7 @@ import { LiquidityHeatmap } from './components/LiquidityHeatmap/LiquidityHeatmap
 import { OrderForm } from './components/OrderForm/OrderForm'
 import { Spot } from './components/Spot/Spot'
 import { Swap } from './components/Swap/Swap'
+import { FuturesWidget } from './components/FuturesWidget/FuturesWidget'
 import { Futures } from './components/Futures/Futures'
 import { MultiChart } from './components/MultiChart/MultiChart'
 import { OrdersPanel } from './components/OrdersPanel/OrdersPanel'
@@ -46,7 +47,7 @@ function SpotForm({ onOpenWallet, onApiKey }) {
   return <SwapWidget onOpenWallet={onOpenWallet} />
 }
 function FuturesForm({ onOpenWallet }) {
-  return <Futures onOpenWallet={onOpenWallet} />
+  return <FuturesWidget onOpenWallet={onOpenWallet} />
 }
 function SwapForm({ onOpenWallet }) {
   return <Swap onOpenWallet={onOpenWallet} />
