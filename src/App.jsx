@@ -45,7 +45,7 @@ import styles from './App.module.css'
 
 // ── Composants définis HORS de App() — sinon remount à chaque render ──
 function SpotForm({ onOpenWallet, onApiKey }) {
-  return <SwapWidget onOpenWallet={onOpenWallet} />
+  return <Spot onOpenWallet={onOpenWallet} />
 }
 function FuturesForm({ onOpenWallet }) {
   return <FuturesWidget onOpenWallet={onOpenWallet} />
@@ -54,7 +54,7 @@ function SwapForm({ onOpenWallet }) {
   return <Swap onOpenWallet={onOpenWallet} />
 }
 function MobileSpot({ onOpenWallet, onApiKey }) {
-  return <SwapWidget onOpenWallet={onOpenWallet} />
+  return <Spot onOpenWallet={onOpenWallet} />
 }
 function MobileFutures({ onOpenWallet }) {
   return <FuturesWidget onOpenWallet={onOpenWallet} />
@@ -206,7 +206,7 @@ export default function App() {
             {!isMobile && (
               <div className={styles.rightCol}>
                 {tab === 'Futures' ? <FuturesForm onOpenWallet={openWallet} />
-                  : tab === 'Spot' ? <SpotForm onOpenWallet={openWallet} />
+                  : tab === 'Swap' ? <SpotForm onOpenWallet={openWallet} />
                   : <SwapForm onOpenWallet={openWallet} />}
               </div>
             )}
@@ -216,7 +216,7 @@ export default function App() {
           {isMobile && (
             <div className={styles.mobileForm}>
               {tab === 'Futures' ? <MobileFutures onOpenWallet={openWallet} />
-                : tab === 'Spot' ? <MobileSpot onOpenWallet={openWallet} />
+                : tab === 'Swap' ? <MobileSpot onOpenWallet={openWallet} />
                 : <MobileSwap onOpenWallet={openWallet} />}
             </div>
           )}

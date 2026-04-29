@@ -75,7 +75,7 @@ export function Ticker({ onOpenWallet, wsLive }) {
 
         {/* Main nav — Spot / Futures / Swap */}
         <nav className={styles.mainnav}>
-          {['Futures','Spot'].map(t => (
+          {['Futures','Swap'].map(t => (
             <button
               key={t}
               className={`${styles.navBtn} ${tab===t&&view==='trade'?styles.navOn:''}`}

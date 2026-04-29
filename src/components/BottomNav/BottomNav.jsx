@@ -2,7 +2,7 @@ import styles from './BottomNav.module.css'
 
 const NAV = [
   { view:'trade',   tab:'Futures', icon:'⚡',  label:'Futures'   },
-  { view:'trade',   tab:'Spot',    icon:'📊',  label:'Spot'      },
+  { view:'trade',   tab:'Swap',    icon:'📊',  label:'Swap'      },
   { view:'intel',   tab:null,      icon:'📡',  label:'Intel'     },
   { view:'copy',    tab:null,      icon:'👥',  label:'Copy'      },
   { view:'wallet',  tab:null,      icon:'💼',  label:'Portfolio' },
