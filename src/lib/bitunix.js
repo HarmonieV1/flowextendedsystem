@@ -3,8 +3,8 @@
 // Netlify redirect forward vers fapi.bitunix.com avec tous les headers
 // Les clés sont stockées en localStorage (base64), jamais envoyées en clair
 
-const FUTURES_PROXY = '/bx-futures'   // → fapi.bitunix.com via redirect Netlify
-const SPOT_PROXY    = '/bx-spot'      // → openapi.bitunix.com via redirect Netlify
+const FUTURES_PROXY = '/bx'   // Netlify Edge Function → fapi.bitunix.com
+const SPOT_PROXY    = '/bxs'  // Netlify Edge Function → openapi.bitunix.com
 const STORAGE_KEY   = 'fxs_bx_v2'
 
 // ── Gestion des clés ─────────────────────────────────────────────────────────
@@ -27,69 +27,36 @@ export function loadApiKeys() {
 export function clearApiKeys() { localStorage.removeItem(STORAGE_KEY) }
 export function hasApiKeys()   { return !!loadApiKeys() }
 
-// ── Signature HMAC-SHA256 (SubtleCrypto natif navigateur) ────────────────────
-
-async function hmacSha256(secretKey, message) {
-  const enc = new TextEncoder()
-  const key = await crypto.subtle.importKey(
-    'raw', enc.encode(secretKey),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false, ['sign']
-  )
-  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message))
-  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2,'0')).join('')
-}
-
-function sortedStr(obj) {
-  return Object.keys(obj || {}).sort().map(k => `${k}${obj[k]}`).join('')
-}
-
 function nonce32() {
   return Array.from(crypto.getRandomValues(new Uint8Array(16)))
     .map(b => b.toString(16).padStart(2,'0')).join('')
 }
 
-// ── Appel API ────────────────────────────────────────────────────────────────
+// ── Appel API via Edge Function ─────────────────────────────────────────────
 
 async function call(market, path, method = 'GET', body = null, queryParams = {}) {
   const keys = loadApiKeys()
   if (!keys) throw new Error('Clés API non configurées — clique ⚙️ pour les ajouter')
 
-  const { apiKey, secretKey } = keys
-  const nonce     = nonce32()
-  const timestamp = String(Date.now())
-
-  // Sérialiser le body
-  const bodyObj = body || {}
-  const bodyStr = method === 'GET' ? '' : JSON.stringify(bodyObj)
-  const bodyForSign = method === 'GET' ? {} : bodyObj
-
-  // Signature
-  const message = `${nonce}${timestamp}${apiKey}${sortedStr(queryParams)}${sortedStr(bodyForSign)}`
-  const sign    = await hmacSha256(secretKey, message)
-
-  // URL via proxy Netlify
   const base = market === 'spot' ? SPOT_PROXY : FUTURES_PROXY
-  const qs   = Object.keys(queryParams).length
-    ? '?' + new URLSearchParams(queryParams).toString()
-    : ''
-  const url  = base + path + qs
+
+  // Passer endpoint + méthode en query params vers l'Edge Function
+  const qs = new URLSearchParams({ e: path, x: method, ...queryParams }).toString()
+  const url = `${base}?${qs}`
 
   const r = await fetch(url, {
-    method,
+    method: 'POST',
     headers: {
-      'api-key':      apiKey,
-      'sign':         sign,
-      'nonce':        nonce,
-      'timestamp':    timestamp,
-      'language':     'en-US',
       'Content-Type': 'application/json',
+      'x-bx-key':     keys.apiKey,
+      'x-bx-secret':  keys.secretKey,
     },
-    ...(method !== 'GET' ? { body: bodyStr } : {}),
+    body: (method !== 'GET' && body) ? JSON.stringify(body) : JSON.stringify({}),
     signal: AbortSignal.timeout(12000),
   })
 
   const data = await r.json()
+  if (data.needsKeys) throw new Error('Clés API invalides — vérifie ta clé et ton secret')
   if (data.code !== 0) throw new Error(data.msg || `Erreur ${r.status}`)
   return data.data
 }
