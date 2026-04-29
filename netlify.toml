@@ -6,16 +6,21 @@
   NODE_VERSION = "22"
 
 
-# ── Bitunix API Proxy (contourne CORS sans Cloudflare Worker) ──────────────────
+# ── Bitunix Futures Proxy (forward tous les headers) ──────────────────────────
 [[redirects]]
-  from = "/_api/bitunix/*"
-  to = "https://api.bitunix.com/:splat"
+  from = "/bx-futures/*"
+  to = "https://fapi.bitunix.com/:splat"
   status = 200
   force = true
-  [redirects.headers]
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
-    Access-Control-Allow-Headers = "*"
+  headers = {X-Forwarded-Host = "fapi.bitunix.com"}
+
+# ── Bitunix Spot Proxy ──────────────────────────────────────────────────────────
+[[redirects]]
+  from = "/bx-spot/*"
+  to = "https://openapi.bitunix.com/:splat"
+  status = 200
+  force = true
+  headers = {X-Forwarded-Host = "openapi.bitunix.com"}
 
 # SPA routing — all routes serve index.html
 [[redirects]]
