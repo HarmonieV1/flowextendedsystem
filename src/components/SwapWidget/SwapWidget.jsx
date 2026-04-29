@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAccount, useWalletClient, usePublicClient, useSwitchChain } from 'wagmi'
 import { erc20Abi } from 'viem'
+import { arbitrum, mainnet, base, polygon } from 'wagmi/chains'
 import {
   getPrice, buildTx, fmtTokenAmount, toBaseUnits,
   CHAINS, POPULAR_TOKENS, NATIVE_TOKEN, FEE_BPS, FEE_RECIPIENT
@@ -96,13 +97,24 @@ export function SwapWidget({ onOpenWallet }) {
     setSwapping(true); setError(null); setTxHash(null)
     try {
       const tx = await buildTx({ chainId, priceRoute, taker: address })
+      // Paraswap peut retourner value en hex ou en decimal string
+      const txValue = tx.value
+        ? (typeof tx.value === 'string' && tx.value.startsWith('0x')
+            ? BigInt(tx.value)
+            : BigInt(Math.round(Number(tx.value))))
+        : 0n
+
+      const chainMap = { 1: mainnet, 42161: arbitrum, 8453: base, 137: polygon }
+      // On est sur Arbitrum (42161) par défaut
+      const viemChain = chainMap[chainId] || arbitrum
+
       const hash = await walletClient.sendTransaction({
         to:      tx.to,
         data:    tx.data,
-        value:   tx.value ? BigInt(tx.value) : 0n,
-        gas:     tx.gas   ? BigInt(tx.gas)   : undefined,
+        value:   txValue,
+        gas:     tx.gas ? BigInt(Math.round(Number(tx.gas))) : undefined,
         account: address,
-        chain:   { id: chainId },
+        chain:   viemChain,
       })
       setTxHash(hash)
       setSellAmt(''); setPriceRoute(null)

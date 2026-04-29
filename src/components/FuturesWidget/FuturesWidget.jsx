@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAccount, useWalletClient, usePublicClient } from 'wagmi'
 import { useStore } from '../../store'
 import { fmtPx, fmt } from '../../lib/format'
-import { createGmxSdk, openPosition, GMX_MARKETS, UI_FEE_BPS } from '../../lib/gmxSdk'
+import { openPosition, GMX_MARKETS, UI_FEE_BPS } from '../../lib/gmxSdk'
 import styles from './FuturesWidget.module.css'
 
 const LEVERAGE_PRESETS = [2, 5, 10, 20, 50]
@@ -52,16 +52,16 @@ export function FuturesWidget({ onOpenWallet }) {
 
     setSubmit(true)
     try {
-      const sdk = createGmxSdk(walletClient, publicClient)
-      await openPosition({
-        sdk,
+      const hash = await openPosition({
+        walletClient,
+        publicClient,
         pair,
         isLong: side === 'long',
         collateralUsd: parseFloat(collateral),
         leverage,
         account: address,
       })
-      setOkMsg(`✓ Ordre ${side === 'long' ? 'Long ↑' : 'Short ↓'} envoyé — ${base} ×${leverage}`)
+      setOkMsg(`✓ Ordre ${side === 'long' ? 'Long ↑' : 'Short ↓'} envoyé — ${base} ×${leverage} · ${hash?.slice(0,10)}...`)
       setCol('')
       setTimeout(() => setOkMsg(''), 5000)
     } catch(e) {
