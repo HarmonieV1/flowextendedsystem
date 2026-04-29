@@ -52,7 +52,7 @@ function FuturesForm({ onOpenWallet }) {
   return <FuturesWidget onOpenWallet={onOpenWallet} />
 }
 function SwapForm({ onOpenWallet }) {
-  return <Swap onOpenWallet={onOpenWallet} />
+  return <SwapWidget onOpenWallet={onOpenWallet} />
 }
 function MobileSpot({ onOpenWallet, onApiKey }) {
   return <SpotHub onOpenWallet={onOpenWallet} />
@@ -61,7 +61,7 @@ function MobileFutures({ onOpenWallet }) {
   return <FuturesWidget onOpenWallet={onOpenWallet} />
 }
 function MobileSwap({ onOpenWallet }) {
-  return <Swap onOpenWallet={onOpenWallet} />
+  return <SwapWidget onOpenWallet={onOpenWallet} />
 }
 
 const LEFT_PANELS = ['split', 'smart']

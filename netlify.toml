@@ -30,7 +30,7 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://api.0x.org https://*.netlify.app https://*.netlify.com wss://stream.binance.com wss://stream.bybit.com wss://ws.okx.com wss://ws.bitget.com wss://stream.bybit.com https://api.binance.com https://fapi.binance.com https://api.bybit.com https://api.bitget.com https://api.bitunix.com https://www.bitunix.com https://clob.polymarket.com https://api.alternative.me https://www.deribit.com https://*.supabase.co; img-src 'self' data: https://assets.coingecko.com https://cryptologos.cc https://raw.githubusercontent.com"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://api.0x.org https://*.netlify.app https://*.netlify.com wss://stream.binance.com wss://stream.bybit.com wss://ws.okx.com wss://ws.bitget.com wss://stream.bybit.com https://api.binance.com https://fapi.binance.com https://api.bybit.com https://api.bitget.com https://api.bitunix.com https://www.bitunix.com https://fapi.bitunix.com https://openapi.bitunix.com https://clob.polymarket.com https://api.alternative.me https://www.deribit.com https://*.supabase.co; img-src 'self' data: https://assets.coingecko.com https://cryptologos.cc https://raw.githubusercontent.com"
 
 # Cache static assets aggressively
 [[headers]]

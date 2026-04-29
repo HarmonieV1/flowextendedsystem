@@ -3,7 +3,7 @@
 // Les clés sont chiffrées dans localStorage, jamais visibles en clair dans le network
 // sauf dans les headers HTTPS (chiffrés en transit)
 
-const PROXY = '/api/bitunix'
+const PROXY = '/.netlify/functions/bitunix-proxy'
 const STORAGE_KEY = 'fxs_bx_keys'
 
 // ── Gestion des clés ─────────────────────────────────────────────────────────
