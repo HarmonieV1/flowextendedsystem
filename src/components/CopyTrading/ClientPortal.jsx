@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import styles from './ClientPortal.module.css'
 
 const STORAGE_KEY = 'fxs_copy_v2'
-const CURRENT_PNL = 41.2
+const CURRENT_PNL = 31.4
 
 // Calcul PnL depuis la date de dépôt
 function calcCapital(depositAmt, depositDate) {
