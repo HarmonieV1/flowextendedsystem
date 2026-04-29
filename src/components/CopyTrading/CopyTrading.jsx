@@ -8,6 +8,7 @@ const DEPOSIT_TRON = 'TFu3sHnfUcUBPzT3piHh2s3oH6Q1Fi3ziH'
 const DEPOSIT_ETH  = '0x7109b5Eec69cB071803a7ff0657257e25c56E010'
 const DEPOSIT_SOL  = '7n6MSbzKWXT9oTLBNXrKX548Ejg1rPYx1aeyQFdN9ji4'
 const CURRENT_PNL_PCT = 31.4
+const POOL_AMOUNT     = 32948  // USDC total dans la pool
 const MIN_DEPOSIT = 250
 
 const MASTER = {
@@ -152,6 +153,7 @@ export function CopyTrading({ onOpenWallet, onConnectWallet }) {
 
             {/* Stats bar */}
             <div className={styles.statsBar}>
+              <StatBox label="Pool FXSEDGE" value={`$${POOL_AMOUNT.toLocaleString('fr-FR')} USDC`} />
               <StatBox label="PnL Total"    val={`+${CURRENT_PNL_PCT}%`} green big />
               <StatBox label="Ce mois"      val="+18.4%"  green />
               <StatBox label="Cette semaine" val="+4.2%"  green />

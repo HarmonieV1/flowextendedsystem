@@ -6,6 +6,7 @@ import { Chart } from './components/Chart/Chart'
 import { OrderBook } from './components/OrderBook/OrderBook'
 import { LiquidityHeatmap } from './components/LiquidityHeatmap/LiquidityHeatmap'
 import { OrderForm } from './components/OrderForm/OrderForm'
+import { SwapWidget } from './components/SwapWidget/SwapWidget'
 import { Spot } from './components/Spot/Spot'
 import { Swap } from './components/Swap/Swap'
 import { FuturesWidget } from './components/FuturesWidget/FuturesWidget'
@@ -26,7 +27,6 @@ import { DeltaFlow } from './components/DeltaFlow/DeltaFlow'
 import { FundingRates } from './components/FundingRates/FundingRates'
 import { OptionsFlow } from './components/OptionsFlow/OptionsFlow'
 // New intel components are imported via MarketIntel
-import { SwapWidget } from './components/SwapWidget/SwapWidget'
 import { HarmonicScanner } from './components/HarmonicScanner/HarmonicScanner'
 import { NewsTracker } from './components/NewsTracker/NewsTracker'
 import { LiquidationMap } from './components/LiquidationMap/LiquidationMap'
@@ -54,7 +54,7 @@ function SwapForm({ onOpenWallet }) {
   return <Swap onOpenWallet={onOpenWallet} />
 }
 function MobileSpot({ onOpenWallet, onApiKey }) {
-  return <Spot onOpenWallet={onOpenWallet} />
+  return <SwapWidget onOpenWallet={onOpenWallet} />
 }
 function MobileFutures({ onOpenWallet }) {
   return <QuickFutures onOpenWallet={onOpenWallet} />
