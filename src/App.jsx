@@ -6,6 +6,7 @@ import { Chart } from './components/Chart/Chart'
 import { OrderBook } from './components/OrderBook/OrderBook'
 import { LiquidityHeatmap } from './components/LiquidityHeatmap/LiquidityHeatmap'
 import { OrderForm } from './components/OrderForm/OrderForm'
+import { SpotHub } from './components/SpotHub/SpotHub'
 import { SwapWidget } from './components/SwapWidget/SwapWidget'
 import { Spot } from './components/Spot/Spot'
 import { Swap } from './components/Swap/Swap'
@@ -45,7 +46,7 @@ import styles from './App.module.css'
 
 // ── Composants définis HORS de App() — sinon remount à chaque render ──
 function SpotForm({ onOpenWallet, onApiKey }) {
-  return <Spot onOpenWallet={onOpenWallet} />
+  return <SpotHub onOpenWallet={onOpenWallet} />
 }
 function FuturesForm({ onOpenWallet }) {
   return <FuturesWidget onOpenWallet={onOpenWallet} />
@@ -54,7 +55,7 @@ function SwapForm({ onOpenWallet }) {
   return <Swap onOpenWallet={onOpenWallet} />
 }
 function MobileSpot({ onOpenWallet, onApiKey }) {
-  return <Spot onOpenWallet={onOpenWallet} />
+  return <SpotHub onOpenWallet={onOpenWallet} />
 }
 function MobileFutures({ onOpenWallet }) {
   return <FuturesWidget onOpenWallet={onOpenWallet} />
@@ -206,8 +207,9 @@ export default function App() {
             {!isMobile && (
               <div className={styles.rightCol}>
                 {tab === 'Futures' ? <FuturesForm onOpenWallet={openWallet} />
-                  : tab === 'Swap' ? <SpotForm onOpenWallet={openWallet} />
-                  : <SwapForm onOpenWallet={openWallet} />}
+                  : tab === 'Spot' ? <SpotForm onOpenWallet={openWallet} />
+                  : tab === 'Swap' ? <SwapForm onOpenWallet={openWallet} />
+                  : null}
               </div>
             )}
           </div>
