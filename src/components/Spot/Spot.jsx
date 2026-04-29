@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../../store'
 import { fmtPx, fmt } from '../../lib/format'
-import { spotPlaceOrder, spotGetBalance } from '../../lib/bitunix'
+import { hasApiKeys, spotPlaceOrder, spotGetBalance } from '../../lib/bitunix'
 import styles from './Spot.module.css'
 
 const SPOT_PAIRS = [
@@ -26,17 +26,12 @@ export function Spot({ onOpenWallet }) {
 
   const isAvailable = SPOT_PAIRS.includes(pair)
 
-  // Check API keys
+  // Check keys from localStorage
   useEffect(() => {
-    fetch('/api/bitunix?_market=spot&_endpoint=/api/v1/spot/account/assets&_method=GET', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }
-    })
-    .then(r => r.json())
-    .then(d => {
-      if (d.code === 0) { setHasKeys(true); setBalance(d.data) }
-      else setHasKeys(false)
-    })
-    .catch(() => setHasKeys(false))
+    setHasKeys(hasApiKeys())
+    const h = () => setHasKeys(hasApiKeys())
+    window.addEventListener('fxs:keysUpdated', h)
+    return () => window.removeEventListener('fxs:keysUpdated', h)
   }, [])
 
   // Calc qty from USDC amount
@@ -104,9 +99,16 @@ export function Spot({ onOpenWallet }) {
           <div className={styles.noKeyText}>
             Configure <code>BITUNIX_API_KEY</code> et <code>BITUNIX_SECRET_KEY</code> dans Netlify → Environment Variables
           </div>
-          <a href="https://www.bitunix.com/account/apiManagement" target="_blank" rel="noreferrer" className={styles.noKeyBtn}>
-            Créer mes clés API Bitunix ↗
-          </a>
+          <div style={{display:'flex',gap:8}}>
+            <button className={styles.noKeyBtn}
+              onClick={() => window.dispatchEvent(new CustomEvent('fxs:openApiKey'))}>
+              ⚙️ Connecter mes clés API
+            </button>
+            <a href="https://www.bitunix.com/account/apiManagement" target="_blank" rel="noreferrer"
+              style={{padding:'10px',background:'var(--bg3)',borderRadius:8,color:'var(--txt3)',fontSize:11,textDecoration:'none',display:'flex',alignItems:'center'}}>
+              Créer une clé ↗
+            </a>
+          </div>
         </div>
       )}
 

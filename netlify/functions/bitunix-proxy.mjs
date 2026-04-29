@@ -1,82 +1,65 @@
-// Netlify Function — Proxy Bitunix API avec signature HMAC côté serveur
-// La secretKey ne sort JAMAIS du serveur Netlify
-// Browser → /.netlify/functions/bitunix-proxy → fapi.bitunix.com / openapi.bitunix.com
+// Netlify Function — Proxy Bitunix avec clés API de l'utilisateur
+// Les clés arrivent dans les headers, signent la requête, et sont oubliées immédiatement
+// Jamais stockées côté serveur — juste utilisées pour signer
 
 import crypto from 'crypto'
 
 const FUTURES_BASE = 'https://fapi.bitunix.com'
 const SPOT_BASE    = 'https://openapi.bitunix.com'
 
-/**
- * Bitunix HMAC-SHA256 signature
- * Docs: https://www.bitunix.com/api-docs/futures/common/sign.html
- * 
- * Step 1: Sort all queryParams alphabetically → queryString
- * Step 2: Sort all body params alphabetically → bodyString  
- * Step 3: sign = HMAC-SHA256(nonce + timestamp + apiKey + queryString + bodyString, secretKey)
- */
 function buildSign(apiKey, secretKey, nonce, timestamp, queryParams, bodyParams) {
   const sortKeys = (obj) => Object.keys(obj || {}).sort()
     .map(k => `${k}${obj[k]}`).join('')
-
-  const queryString = sortKeys(queryParams)
-  const bodyString  = sortKeys(bodyParams)
-
-  const message = `${nonce}${timestamp}${apiKey}${queryString}${bodyString}`
+  const message = `${nonce}${timestamp}${apiKey}${sortKeys(queryParams)}${sortKeys(bodyParams)}`
   return crypto.createHmac('sha256', secretKey).update(message).digest('hex')
 }
 
 export default async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('', { status: 200 })
-  }
+  if (req.method === 'OPTIONS') return new Response('', { status: 200 })
 
   try {
     const url      = new URL(req.url)
-    const market   = url.searchParams.get('_market') || 'futures' // futures | spot
-    const endpoint = url.searchParams.get('_endpoint') // e.g. /api/v1/futures/trade/place_order
-    const method   = (url.searchParams.get('_method') || 'POST').toUpperCase()
+    const market   = url.searchParams.get('_market')   || 'futures'
+    const endpoint = url.searchParams.get('_endpoint')
+    const method   = (url.searchParams.get('_method')  || 'POST').toUpperCase()
 
-    if (!endpoint) {
-      return new Response(JSON.stringify({ error: '_endpoint required' }), { status: 400 })
-    }
+    if (!endpoint) return new Response(JSON.stringify({ error: '_endpoint required' }), { status: 400 })
 
-    // Get API keys from Netlify env
-    const apiKey    = Netlify.env.get('BITUNIX_API_KEY')    || ''
-    const secretKey = Netlify.env.get('BITUNIX_SECRET_KEY') || ''
+    // Clés API de L'UTILISATEUR — envoyées dans les headers par le browser
+    // Jamais stockées, utilisées uniquement pour signer cette requête
+    const apiKey    = req.headers.get('x-bitunix-key')    || ''
+    const secretKey = req.headers.get('x-bitunix-secret') || ''
 
     if (!apiKey || !secretKey) {
-      return new Response(JSON.stringify({ error: 'Clés API Bitunix non configurées' }), { status: 401 })
+      return new Response(JSON.stringify({
+        code: -1,
+        msg: 'Clés API manquantes — configure tes clés dans FXSEDGE',
+        needsKeys: true,
+      }), { status: 401 })
     }
 
-    const nonce     = crypto.randomBytes(16).toString('hex') // 32 chars
+    const nonce     = crypto.randomBytes(16).toString('hex')
     const timestamp = String(Date.now())
 
-    // Parse query params (remove our internal params)
+    // Query params (sans nos params internes)
     const queryParams = {}
     url.searchParams.forEach((v, k) => {
       if (!k.startsWith('_')) queryParams[k] = v
     })
 
-    // Parse body
-    let bodyParams = {}
-    let bodyStr    = ''
-    if (method === 'POST') {
-      try {
-        bodyStr    = await req.text()
-        bodyParams = bodyStr ? JSON.parse(bodyStr) : {}
-      } catch(_) {}
+    // Body
+    let bodyStr = ''; let bodyParams = {}
+    if (method === 'POST' || req.method === 'POST') {
+      try { bodyStr = await req.text(); bodyParams = bodyStr ? JSON.parse(bodyStr) : {} } catch(_) {}
     }
 
-    const sign = buildSign(apiKey, secretKey, nonce, timestamp, queryParams, bodyParams)
-
+    const sign    = buildSign(apiKey, secretKey, nonce, timestamp, queryParams, bodyParams)
     const base    = market === 'spot' ? SPOT_BASE : FUTURES_BASE
-    const fullUrl = base + endpoint + (Object.keys(queryParams).length
-      ? '?' + new URLSearchParams(queryParams).toString()
-      : '')
+    const qs      = Object.keys(queryParams).length ? '?' + new URLSearchParams(queryParams) : ''
+    const fullUrl = base + endpoint + qs
 
     const resp = await fetch(fullUrl, {
-      method,
+      method: method === 'GET' ? 'GET' : 'POST',
       headers: {
         'api-key':      apiKey,
         'sign':         sign,
@@ -85,7 +68,7 @@ export default async (req) => {
         'language':     'en-US',
         'Content-Type': 'application/json',
       },
-      ...(method === 'POST' ? { body: bodyStr } : {}),
+      ...(method !== 'GET' && bodyStr ? { body: bodyStr } : {}),
     })
 
     const data = await resp.text()
@@ -95,10 +78,8 @@ export default async (req) => {
     })
 
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 500 })
+    return new Response(JSON.stringify({ code: -1, msg: e.message }), { status: 500 })
   }
 }
 
-export const config = {
-  path: '/api/bitunix',
-}
+export const config = { path: '/api/bitunix' }

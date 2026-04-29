@@ -23,7 +23,8 @@ export function ApiKeyModal({ onClose, onSuccess }) {
 
     if (result.ok) {
       setStep('success')
-      onSuccess?.()
+      window.dispatchEvent(new CustomEvent('fxs:keysUpdated'))
+    onSuccess?.()
       // Save connected state
       useStore && window.dispatchEvent(new Event('fxs:apiConnected'))
     } else {

@@ -3,6 +3,7 @@ import { useAccount } from 'wagmi'
 import { useStore } from '../../store'
 import { fmtPx, fmt } from '../../lib/format'
 import {
+  hasApiKeys,
   futuresPlaceOrder, futuresGetBalance, futuresGetPositions,
   futuresClosePosition, futuresSetLeverage
 } from '../../lib/bitunix'
@@ -44,18 +45,13 @@ export function FuturesWidget({ onOpenWallet }) {
   const posUSD = qty && lastPx ? parseFloat(qty) * lastPx : 0
   const sym    = PAIRS[pair] || 'BTCUSDT'
 
-  // Check if API keys are set (via Netlify env → proxy will tell us)
+  // Check keys from localStorage (instant, no server call)
   useEffect(() => {
-    fetch('/api/bitunix?_market=futures&_endpoint=/api/v1/futures/account/get_single_account&_method=GET', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }
-    })
-    .then(r => r.json())
-    .then(d => {
-      if (d.code === 0) { setHasKeys(true); setBalance(d.data) }
-      else if (d.error === 'Clés API Bitunix non configurées') setHasKeys(false)
-      else setHasKeys(false)
-    })
-    .catch(() => setHasKeys(false))
+    setHasKeys(hasApiKeys())
+    // Refresh when keys are saved via modal
+    const h = () => setHasKeys(hasApiKeys())
+    window.addEventListener('fxs:keysUpdated', h)
+    return () => window.removeEventListener('fxs:keysUpdated', h)
   }, [])
 
   const loadData = async () => {
@@ -143,9 +139,16 @@ export function FuturesWidget({ onOpenWallet }) {
             <strong>Bitunix → API Management → Créer une clé</strong><br/>
             Puis ajoute <code>BITUNIX_API_KEY</code> et <code>BITUNIX_SECRET_KEY</code> dans Netlify → Site → Environment Variables
           </div>
-          <a href="https://www.bitunix.com/account/apiManagement" target="_blank" rel="noreferrer" className={styles.noKeyBtn}>
-            Créer mes clés API Bitunix ↗
-          </a>
+          <div style={{display:'flex',gap:8}}>
+            <button className={styles.noKeyBtn}
+              onClick={() => window.dispatchEvent(new CustomEvent('fxs:openApiKey'))}>
+              ⚙️ Connecter mes clés API
+            </button>
+            <a href="https://www.bitunix.com/account/apiManagement" target="_blank" rel="noreferrer"
+              style={{padding:'10px',background:'var(--bg3)',borderRadius:8,color:'var(--txt3)',fontSize:11,textDecoration:'none',display:'flex',alignItems:'center'}}>
+              Créer une clé ↗
+            </a>
+          </div>
         </div>
       )}
 
