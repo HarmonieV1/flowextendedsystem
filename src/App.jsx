@@ -126,7 +126,7 @@ export default function App() {
       {/* ── FULL PAGE VIEWS ── */}
       {view === 'multi'     && <MultiChart />}
       {view === 'wallet'    && <WalletPage onDeposit={openDeposit} onWithdraw={openWithdraw} />}
-      {view === 'copy'      && <CopyTrading onConnectWallet={openWallet} />}
+      {view === 'copy'      && <CopyTrading onOpenWallet={openWallet} />}
       {view === 'manifesto' && <Manifesto />}
       {view === 'sizer'     && <PositionSizer />}
       {view === 'journal'   && <TradeJournal />}
