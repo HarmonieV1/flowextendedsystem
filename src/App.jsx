@@ -57,7 +57,7 @@ function MobileSpot({ onOpenWallet, onApiKey }) {
   return <SwapWidget onOpenWallet={onOpenWallet} />
 }
 function MobileFutures({ onOpenWallet }) {
-  return <QuickFutures onOpenWallet={onOpenWallet} />
+  return <FuturesWidget onOpenWallet={onOpenWallet} />
 }
 function MobileSwap({ onOpenWallet }) {
   return <Swap onOpenWallet={onOpenWallet} />
@@ -129,7 +129,7 @@ export default function App() {
       {view === 'wallet' && (
         <div className={styles.tradePanel}><PortfolioHub onOpenWallet={openWallet}/></div>
       )}
-      {view === 'wallet_old_'    && <WalletPage onDeposit={openDeposit} onWithdraw={openWithdraw} />}
+      {view === 'wallet_noop_DISABLED'    && <WalletPage onDeposit={openDeposit} onWithdraw={openWithdraw} />}
       {view === 'copy'      && <CopyTrading onOpenWallet={openWallet} />}
       {view === 'manifesto' && <Manifesto />}
       {view === 'sizer'     && <PositionSizer />}

@@ -32,10 +32,13 @@ export function AggregatedBook() {
     const sym = pair.toLowerCase()
 
     // Binance
+    const throttleMs = 1500
+    let binTs = 0, bybTs = 0, bitTs = 0
     const bin = new WebSocket(`wss://stream.binance.com:9443/ws/${sym}@depth20@1000ms`)
     bin.onopen = () => setStatus(p=>({...p,Binance:'🟢'}))
     bin.onclose = () => setStatus(p=>({...p,Binance:'🔴'}))
     bin.onmessage = e => {
+      const now = Date.now(); if (now - binTs < throttleMs) return; binTs = now
       try {
         const d = JSON.parse(e.data)
         const bids = d.bids.map(([p,v])=>[parseFloat(p),parseFloat(v)])
@@ -57,6 +60,7 @@ export function AggregatedBook() {
     }
     byb.onclose = () => setStatus(p=>({...p,Bybit:'🔴'}))
     byb.onmessage = e => {
+      const now = Date.now(); if (now - bybTs < throttleMs) return; bybTs = now
       try {
         const d = JSON.parse(e.data)
         if (d.data?.b && d.data?.a) {
@@ -82,6 +86,7 @@ export function AggregatedBook() {
     }
     bitget.onclose = () => { clearInterval(bitget._ping); setStatus(p=>({...p,Bitget:'🔴'})) }
     bitget.onmessage = e => {
+      const now = Date.now(); if (now - bitTs < throttleMs) return; bitTs = now
       try {
         if(e.data==='pong') return
         const d = JSON.parse(e.data)
