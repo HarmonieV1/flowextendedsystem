@@ -2,10 +2,10 @@ import styles from './BottomNav.module.css'
 
 const NAV = [
   { view:'trade',   tab:'Futures', icon:'⚡',  label:'Futures'   },
-  { view:'trade',   tab:'Spot',    icon:'📊', label:'Spot'      },
-  { view:'intel',   tab:null,      icon:'📡', label:'Intel'     },
-  { view:'multi',   tab:null,      icon:'⊞',  label:'Multi'     },
-  { view:'wallet',  tab:null,      icon:'💼', label:'Portfolio' },
+  { view:'trade',   tab:'Spot',    icon:'📊',  label:'Spot'      },
+  { view:'intel',   tab:null,      icon:'📡',  label:'Intel'     },
+  { view:'copy',    tab:null,      icon:'👥',  label:'Copy'      },
+  { view:'wallet',  tab:null,      icon:'💼',  label:'Portfolio' },
 ]
 
 export function BottomNav({ activeView, activeTab, onNavigate }) {

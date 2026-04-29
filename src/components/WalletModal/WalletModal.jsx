@@ -42,7 +42,15 @@ export function WalletModal({ open, onClose }) {
     const n = (conn.name || conn.id || '').toLowerCase()
     if (n.includes('metamask') || conn.id === 'metaMask') return { icon: '🦊', label: 'MetaMask', sub: 'Connecter MetaMask' }
     if (n.includes('coinbase')) return { icon: '🔵', label: 'Coinbase Wallet', sub: 'App mobile ou extension' }
-    if (n.includes('injected')) return { icon: '💎', label: 'Browser Wallet', sub: 'Wallet détecté' }
+    if (n.includes('injected')) {
+      // Detect specific injected wallet
+      if (typeof window !== 'undefined') {
+        if (window.phantom?.ethereum) return { icon: '👻', label: 'Phantom', sub: 'EVM · Arbitrum · Base · ETH' }
+        if (window.rabby) return { icon: '🐰', label: 'Rabby Wallet', sub: 'Multi-chain · Secure' }
+        if (window.ethereum?.isBraveWallet) return { icon: '🦁', label: 'Brave Wallet', sub: 'Intégré au navigateur' }
+      }
+      return { icon: '🦊', label: 'MetaMask', sub: 'ou wallet EVM détecté' }
+    }
     return { icon: '◈', label: conn.name, sub: 'Connecter' }
   }
 

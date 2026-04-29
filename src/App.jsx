@@ -12,6 +12,7 @@ import { FuturesWidget } from './components/FuturesWidget/FuturesWidget'
 import { Futures } from './components/Futures/Futures'
 import { MultiChart } from './components/MultiChart/MultiChart'
 import { OrdersPanel } from './components/OrdersPanel/OrdersPanel'
+import { PortfolioHub } from './components/PortfolioHub/PortfolioHub'
 import { WalletPage } from './components/WalletPage/WalletPage'
 import { WalletModal } from './components/WalletModal/WalletModal'
 import { DepositModal } from './components/DepositModal/DepositModal'
@@ -125,7 +126,10 @@ export default function App() {
 
       {/* ── FULL PAGE VIEWS ── */}
       {view === 'multi'     && <MultiChart />}
-      {view === 'wallet'    && <WalletPage onDeposit={openDeposit} onWithdraw={openWithdraw} />}
+      {view === 'wallet' && (
+        <div className={styles.tradePanel}><PortfolioHub onOpenWallet={openWallet}/></div>
+      )}
+      {view === 'wallet_old_'    && <WalletPage onDeposit={openDeposit} onWithdraw={openWithdraw} />}
       {view === 'copy'      && <CopyTrading onOpenWallet={openWallet} />}
       {view === 'manifesto' && <Manifesto />}
       {view === 'sizer'     && <PositionSizer />}

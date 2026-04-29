@@ -91,7 +91,6 @@ export function Ticker({ onOpenWallet, wsLive }) {
           <button className={`${styles.navBtn} ${view==='copy'?styles.navOn:''}`} onClick={() => setView('copy')}>Copy ⟳</button>
           <button className={`${styles.navBtn} ${view==='manifesto'?styles.navOn:''}`} onClick={() => setView('manifesto')}>Manifesto</button>
           <button className={`${styles.navBtn} ${view==='intel'?styles.navOn:''}`} onClick={() => setView('intel')}>📡 Intel</button>
-          <button className={`${styles.navBtn} ${view==='liqmap'?styles.navOn:''}`} onClick={() => setView('liqmap')}>💧 Liq Map</button>
           <button className={`${styles.navBtn} ${view==='journal'?styles.navOn:''}`} onClick={() => setView('journal')}>📓 Journal</button>
           <button className={`${styles.navBtn} ${view==='wallet'?styles.navOn:''}`} onClick={() => setView('wallet')}>Portfolio</button>
         </nav>

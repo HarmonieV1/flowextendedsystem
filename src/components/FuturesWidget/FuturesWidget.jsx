@@ -102,6 +102,17 @@ export function FuturesWidget({ onOpenWallet }) {
         </div>
       )}
 
+      {/* Chain info */}
+      <div style={{padding:'5px 14px',background:'rgba(45,106,246,.04)',borderBottom:'1px solid var(--brd)',display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',flexShrink:0}}>
+        <span style={{fontSize:9,color:'var(--txt3)'}}>Réseau:</span>
+        <span style={{fontSize:9,fontWeight:700,color:'#4f9eff',padding:'1px 6px',background:'rgba(45,106,246,.12)',borderRadius:3}}>🔵 Arbitrum</span>
+        <span style={{fontSize:9,color:'var(--txt3)',opacity:.5}}>+ Optimism · BNB · Base (V2)</span>
+        <span style={{flex:1}}/>
+        {wrongChain && (
+          <span style={{fontSize:9,color:'#f59e0b',fontWeight:700}}>⚠ Change sur Arbitrum dans MetaMask</span>
+        )}
+      </div>
+
       {/* KB shortcuts */}
       <div className={styles.kbBar}>
         {[['L','Long'],['X','Short'],['1-5','Levier']].map(([k,v])=>(

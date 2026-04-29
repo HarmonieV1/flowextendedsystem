@@ -1,0 +1,5 @@
+.wrap{display:flex;flex-direction:column;height:100%;overflow:hidden;background:var(--bg0)}
+.tabs{display:flex;border-bottom:1px solid var(--brd);background:var(--bg1);flex-shrink:0}
+.tab{flex:1;padding:10px 14px;border:none;background:transparent;color:var(--txt3);font-weight:600;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.tabOn{color:var(--txt);font-weight:800;border-bottom-color:var(--grn)}
+.content{flex:1;overflow:hidden;display:flex;flex-direction:column}
