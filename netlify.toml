@@ -1,60 +1,32 @@
 [build]
-  command = "npm run build"
-  publish = "dist"
+  command   = "npm run build"
+  publish   = "dist"
 
 [build.environment]
   NODE_VERSION = "22"
 
+[functions]
+  directory = "netlify/functions"
 
-# ── Bitunix Futures Proxy (forward tous les headers) ──────────────────────────
-[[redirects]]
-  from = "/bx-futures/*"
-  to = "https://fapi.bitunix.com/:splat"
-  status = 200
-  force = true
-  headers = {X-Forwarded-Host = "fapi.bitunix.com"}
+[[edge_functions]]
+  function = "bitunix"
+  path     = "/bx"
 
-# ── Bitunix Spot Proxy ──────────────────────────────────────────────────────────
-[[redirects]]
-  from = "/bx-spot/*"
-  to = "https://openapi.bitunix.com/:splat"
-  status = 200
-  force = true
-  headers = {X-Forwarded-Host = "openapi.bitunix.com"}
+[[edge_functions]]
+  function = "bitunix"
+  path     = "/bxs"
 
-# SPA routing — all routes serve index.html
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
+  from   = "/*"
+  to     = "/index.html"
   status = 200
 
-# Security headers
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://api.0x.org https://*.netlify.app https://*.netlify.com wss://stream.binance.com wss://stream.bybit.com wss://ws.okx.com wss://ws.bitget.com wss://stream.bybit.com https://api.binance.com https://fapi.binance.com https://api.bybit.com https://api.bitget.com https://api.bitunix.com https://www.bitunix.com https://fapi.bitunix.com https://openapi.bitunix.com https://clob.polymarket.com https://api.alternative.me https://www.deribit.com https://*.supabase.co; img-src 'self' data: https://assets.coingecko.com https://cryptologos.cc https://raw.githubusercontent.com"
-
-# Cache static assets aggressively
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-[functions]
-  directory = "netlify/functions"
-
 [[headers]]
-  for = "/.netlify/functions/*"
+  for = "/*"
   [headers.values]
-    Access-Control-Allow-Origin = "*"
-
-[[edge_functions]]
-  function = "bitunix"
-  path = "/bx"
-
-[[edge_functions]]
-  function = "bitunix"
-  path = "/bxs"
+    X-Content-Type-Options = "nosniff"
