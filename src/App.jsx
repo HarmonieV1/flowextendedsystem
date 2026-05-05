@@ -6,6 +6,7 @@ import { signIn, signUp, getUser, onAuthChange, signOut, resetPassword, checkPre
 import { Disclaimer } from './components/Disclaimer/Disclaimer'
 import { Ticker } from './components/Ticker/Ticker'
 import { Comparator } from './components/Comparator/Comparator'
+import { SessionBar } from './components/SessionBar/SessionBar'
 import { Chart } from './components/Chart/Chart'
 import { OrderBook } from './components/OrderBook/OrderBook'
 import { LiquidityHeatmap } from './components/LiquidityHeatmap/LiquidityHeatmap'
@@ -262,6 +263,7 @@ export default function App() {
 
       {/* ── CHROME ── */}
       <Ticker onOpenWallet={openWallet} wsLive={wsLive} />
+      {keyed && <SessionBar />}
       <MarketOverview />
       <Comparator />
 

@@ -3,6 +3,8 @@ import { useAccount, usePublicClient } from 'wagmi'
 import { useStore } from '../../store'
 import { fmtPx, fmt } from '../../lib/format'
 import { useT } from '../../lib/i18n'
+import { TradeCard } from '../TradeCard/TradeCard'
+import { recordTrade } from '../SessionBar/SessionBar'
 import {
   hasApiKeys, futuresPlaceOrder, futuresGetBalance,
   futuresGetPositions, futuresClosePosition, futuresSetLeverage,
@@ -47,6 +49,7 @@ export function FuturesWidget({ onOpenWallet }) {
   const [positions, setPos]   = useState([])
   const [orders, setOrders]   = useState([])
   const [history, setHistory] = useState([])
+  const [shareTrade, setShareTrade] = useState(null)
 
   const posUSD = qty && lastPx ? parseFloat(qty)*lastPx : 0
 
@@ -277,11 +280,13 @@ export function FuturesWidget({ onOpenWallet }) {
     for (const p of positions) {
       try {
         const isLong = (p.side||'').toUpperCase() === 'LONG' || (p.side||'').toUpperCase() === 'BUY'
+        const pnl = parseFloat(p.unrealizedPNL || 0)
         if (exchange === 'bitget') {
           await bitgetClosePosition({symbol:p.symbol, side:isLong?'long':'short'})
         } else {
           await futuresClosePosition({symbol:p.symbol, side:isLong?'long':'short', qty:p.qty, positionId:p.positionId})
         }
+        recordTrade({ pair: p.symbol, pnl, side: isLong ? 'long' : 'short' })
       } catch(e){logSilent(e,'FuturesWidget')}
     }
     playOrderSound(false)
@@ -499,6 +504,8 @@ export function FuturesWidget({ onOpenWallet }) {
                         } else {
                           await futuresClosePosition({symbol:p.symbol, side:isLong?'long':'short', qty:p.qty, positionId:p.positionId})
                         }
+                        // Record in session stats
+                        recordTrade({ pair: p.symbol, pnl, side: isLong ? 'long' : 'short' })
                         playOrderSound(!isLong)
                         flashScreen(!isLong)
                         window.dispatchEvent(new CustomEvent('fxs:positionUpdate'))
@@ -539,10 +546,25 @@ export function FuturesWidget({ onOpenWallet }) {
                     }}>↔ Reverse</button>
                     <button className={styles.closeBtn} style={{flex:0,padding:'6px 10px',fontSize:9,background:'rgba(245,158,11,.08)',borderColor:'rgba(245,158,11,.3)',color:'#f59e0b'}}
                       onClick={()=>{
-                        // Share position as text
-                        const txt = `📊 ${isLong?'LONG':'SHORT'} ${p.symbol.replace('USDT','/USDT')} ${p.leverage}× | Entry: ${fmtPx(p.avgOpenPrice)} | PnL: ${pnl>=0?'+':''}${fmt(pnl,2)} USDT | via @FXSEDGE`
-                        navigator.clipboard?.writeText(txt).then(()=>setOk('Position copiée !')).catch(()=>{})
-                      }}>📋</button>
+                        const entry = parseFloat(p.avgOpenPrice) || 0
+                        const exit = lastPx || entry
+                        const size = parseFloat(p.qty) || 0
+                        const margin = parseFloat(p.margin) || 1
+                        const roi = margin > 0 ? (pnl / margin) * 100 : 0
+                        const tpDist = p.tpPrice ? Math.abs(parseFloat(p.tpPrice) - entry) : Math.abs(exit - entry)
+                        const slDist = p.slPrice ? Math.abs(entry - parseFloat(p.slPrice)) : tpDist / 2 || 1
+                        const rr = slDist > 0 ? tpDist / slDist : 1
+                        setShareTrade({
+                          base: p.symbol.replace('USDT', ''),
+                          side: isLong ? 'long' : 'short',
+                          leverage: p.leverage || 10,
+                          exchange: exchange === 'bitget' ? 'Bitget' : 'Bitunix',
+                          pnl, roi, rr,
+                          entry, exit, size: size.toFixed(4),
+                          duration: 'live',
+                          timestamp: Date.now(),
+                        })
+                      }}>🎴</button>
                   </div>
                 </div>
               )})}
@@ -605,6 +627,7 @@ export function FuturesWidget({ onOpenWallet }) {
       )}
 
       <div className={styles.footer}>⚡ {exchange==='bitget'?'Bitget':'Bitunix'} Perps · {exchange==='bitget'?'Ref FXSEDGE':'Ref FXSA'} · Tes fonds dans ton compte</div>
+      {shareTrade && <TradeCard trade={shareTrade} onClose={() => setShareTrade(null)} />}
     </div>
   )
 }

@@ -25,6 +25,7 @@ const SectorRotation   = lazy(() => import('../SectorRotation/SectorRotation').t
 const DevWalletTracker = lazy(() => import('../DevWalletTracker/DevWalletTracker').then(m => ({ default: m.DevWalletTracker })))
 const PreTradeSimulator= lazy(() => import('../PreTradeSimulator/PreTradeSimulator').then(m => ({ default: m.PreTradeSimulator })))
 const SentimentHub     = lazy(() => import('../SentimentHub/SentimentHub').then(m => ({ default: m.SentimentHub })))
+const AsymmetricRisk   = lazy(() => import('../AsymmetricRisk/AsymmetricRisk').then(m => ({ default: m.AsymmetricRisk })))
 
 // Loading fallback
 const IntelLoader = () => (
@@ -61,6 +62,7 @@ const GROUPS = [
     label: '📊 Marché',
     tabs: [
       { id:'scanner',  icon:'🔍', label:'Scanner'    },
+      { id:'asym',     icon:'⚖',  label:'R:R Async.' },
       { id:'patterns', icon:'🎯', label:'Patterns'    },
       { id:'harmonic', icon:'🦋', label:'Harmonics'   },
       { id:'sentiment',icon:'🧠', label:'Sentiment'   },
@@ -150,6 +152,7 @@ export function MarketIntel() {
         <IntelBoundary key={tab}>
           <Suspense fallback={<IntelLoader />}>
             {tab === 'scanner'  && <MarketScanner />}
+            {tab === 'asym'     && <AsymmetricRisk />}
             {tab === 'patterns' && <PatternScanner />}
             {tab === 'harmonic' && <HarmonicScanner />}
             {tab === 'sentiment'&& <SentimentHub />}

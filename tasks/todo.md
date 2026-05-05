@@ -1,33 +1,25 @@
-# FXSEDGE — TODO Session 3
+# FXSEDGE — TODO Session 4
 
-## EN COURS — par priorité (impact/effort)
+## EN COURS
 
-### 1. Silent catches → ErrorMonitor (CRIT)
-- [ ] Créer logError exporté dans errorMonitor.js
-- [ ] Replace tous les catch(_){} et catch(e){} silencieux
+### 1. Watchlist avec micro-charts
+- [ ] Composant Watchlist avec sparklines 24h
+- [ ] Hook useWatchlist + localStorage persist
+- [ ] Bouton ⭐ dans le Ticker pour ajouter/retirer
 
-### 2. Lazy loading Intel tabs (CRIT)
-- [ ] React.lazy() + Suspense sur les 21 Intel components
-- [ ] Garder Futures/Chart/Ticker eager
+### 2. Trade Sharing Cards
+- [ ] Composant TradeCard (Canvas API)
+- [ ] 2 styles (Editorial / Brutalist)
+- [ ] Bouton "📋 Share" sur les positions et trade history
+- [ ] Download PNG + Copy to clipboard
 
-### 3. Bitget orders + history (WARN)
-- [ ] Ajouter bitgetGetOrders et bitgetGetHistory dans lib/bitget.js
-- [ ] Wire dans FuturesWidget loadData
+### 3. Asymmetric Risk Scanner
+- [ ] Composant AsymmetricRisk dans Intel
+- [ ] Scan paires + détection support proche / résistance loin
+- [ ] R:R ratio calculé automatiquement
+- [ ] Filtrage seuil minimum (ex: R:R > 3)
 
-### 4. API keys — chiffrement Web Crypto (WARN)
-- [ ] Migrer btoa → AES-GCM avec password user
-- [ ] Backward compat (lire ancien btoa, re-save chiffré)
-
-### 5. i18n complet
-- [ ] Étendre src/lib/i18n.js avec toutes les strings
-- [ ] Composants principaux: FuturesWidget, SwapWidget, Spot, MarketIntel, CopyTrading
-
-### 6. Mobile responsive
-- [ ] Audit composants critiques
-- [ ] Fix touch targets, font-sizes, horizontal scroll
-
-### 7. Analytics privacy-friendly (INFO)
-- [ ] Plausible script dans index.html (1 ligne)
-
-### 8. Monitoring externe (INFO)
-- [ ] Sentry minimal ou Supabase error_logs table
+### 4. Session Stats Bar
+- [ ] Hook useSession (localStorage)
+- [ ] Track: durée, trades, PnL, win rate, best/worst
+- [ ] Barre fixe entre Ticker et Comparator

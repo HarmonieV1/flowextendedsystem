@@ -4,6 +4,7 @@ import { hasApiKeys, futuresGetBalance, spotGetBalance, futuresGetPositions, get
 import { useOnChainBalance } from '../../hooks/useBalance'
 import { TradeJournal } from '../TradeJournal/TradeJournal'
 import { PositionSizer } from '../PositionSizer/PositionSizer'
+import { Watchlist } from '../Watchlist/Watchlist'
 import { fmt, fmtPx } from '../../lib/format'
 import styles from './PortfolioHub.module.css'
 import { logSilent } from '../../lib/errorMonitor'
@@ -91,7 +92,7 @@ export function PortfolioHub({ onOpenWallet }) {
   return (
     <div className={styles.wrap}>
       <div className={styles.tabs}>
-        {[["portfolio","📋 Portfolio"],["pnl","📈 PnL"],["perf","📅 Perf"],["sizer","📐 Sizer"],["journal","📓 Journal"]].map(([id,lbl])=>(
+        {[["portfolio","📋 Portfolio"],["watchlist","⭐ Watchlist"],["pnl","📈 PnL"],["perf","📅 Perf"],["sizer","📐 Sizer"],["journal","📓 Journal"]].map(([id,lbl])=>(
           <button key={id} className={styles.tab + (tab===id?" "+styles.tabOn:"")} onClick={()=>setTab(id)}>{lbl}</button>
         ))}
       </div>
@@ -174,6 +175,11 @@ export function PortfolioHub({ onOpenWallet }) {
         )}
         {tab==="pnl" && <PnLTracker />}
         {tab==="perf" && <PerfDashboard />}
+        {tab==="watchlist" && (
+          <div style={{padding:'12px',height:'100%',overflow:'auto'}}>
+            <Watchlist />
+          </div>
+        )}
         {tab==="sizer" && <PositionSizer />}
         {tab==="journal" && <TradeJournal />}
       </div>

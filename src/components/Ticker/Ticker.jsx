@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../../store'
 import { fmtPx } from '../../lib/format'
 import { HotkeyConfig } from '../HotkeyConfig/HotkeyConfig'
+import { isInWatchlist, toggleWatchlist } from '../Watchlist/Watchlist'
 import styles from './Ticker.module.css'
 import { logSilent } from '../../lib/errorMonitor'
 import { getLang, setLang, useT } from '../../lib/i18n'
@@ -37,6 +38,13 @@ function useTheme() {
 
 export function Ticker({ onOpenWallet, wsLive }) {
   const pair = useStore(s => s.pair)
+  const [starred, setStarred] = useState(() => isInWatchlist(pair))
+  useEffect(() => { setStarred(isInWatchlist(pair)) }, [pair])
+  useEffect(() => {
+    const h = () => setStarred(isInWatchlist(pair))
+    window.addEventListener('fxs:watchlistChanged', h)
+    return () => window.removeEventListener('fxs:watchlistChanged', h)
+  }, [pair])
   const setPair = useStore(s => s.setPair)
   const lastPx = useStore(s => s.lastPx)
   const setView = useStore(s => s.setView)
@@ -118,6 +126,12 @@ export function Ticker({ onOpenWallet, wsLive }) {
 
         {/* Right — Lang + Theme + WS + wallet */}
         <div className={styles.right}>
+          <button
+            className={styles.themeBtn}
+            onClick={() => { toggleWatchlist(pair); setStarred(isInWatchlist(pair)) }}
+            title={starred ? 'Retirer de la watchlist' : 'Ajouter à la watchlist'}
+            style={{color: starred ? '#f5a623' : undefined}}
+          >{starred ? '★' : '☆'}</button>
           <button
             className={styles.themeBtn}
             onClick={() => setHotkeyOpen(true)}

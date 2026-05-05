@@ -1,0 +1,51 @@
+.bar {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--bg1); border-bottom: 1px solid var(--brd);
+  padding: 6px 12px; font-size: 10px; overflow-x: auto;
+  white-space: nowrap;
+}
+.bar::-webkit-scrollbar { height: 2px; }
+
+.cell {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 10px; border-right: 1px solid var(--brd);
+  flex-shrink: 0;
+}
+.cell:last-of-type { border-right: none; }
+
+.label {
+  font-size: 9px; color: var(--txt3); font-weight: 700;
+  letter-spacing: .8px;
+}
+.value {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--txt); font-weight: 700;
+}
+.subVal {
+  font-size: 9px; color: var(--txt3); font-weight: 500;
+}
+.actions { display: flex; gap: 4px; margin-left: auto; padding-left: 8px; flex-shrink: 0; }
+.btn {
+  width: 22px; height: 22px;
+  background: var(--bg2); border: 1px solid var(--brd); border-radius: 4px;
+  color: var(--txt2); font-size: 11px; cursor: pointer; transition: .12s;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn:hover { background: var(--bg3); color: var(--txt); }
+
+.collapsed {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 12px; background: var(--bg1); border-bottom: 1px solid var(--brd);
+  font-size: 10px; color: var(--txt2); cursor: pointer; transition: .12s;
+}
+.collapsed:hover { background: var(--bg2); }
+.collapsedTxt { font-family: var(--mono); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--grn); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.4 } }
+
+@media (max-width: 768px) {
+  .bar { font-size: 9px; padding: 4px 8px; }
+  .cell { padding: 0 6px; }
+  .label { font-size: 8px; }
+  .value { font-size: 10px; }
+}
