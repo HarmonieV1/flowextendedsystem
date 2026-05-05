@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../../store'
 import { fmtPx } from '../../lib/format'
 import styles from './PatternScanner.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 // ── 40+ Pattern Detection Algorithms ──────────────────────────────────────────
 
@@ -220,7 +221,7 @@ export function PatternScanner() {
         const candles = data.map(d=>({o:+d[1],h:+d[2],l:+d[3],c:+d[4]}))
         const lastPrice = candles[candles.length-1].c
         detectAll(candles).forEach(p => found.push({...p, pair:PAIRS[i], price:lastPrice}))
-      } catch(_) {}
+      } catch(e){logSilent(e,'PatternScanner')}
     }
     found.sort((a,b)=>b.conf-a.conf)
     setResults(found); setProgress(100); setScanning(false)

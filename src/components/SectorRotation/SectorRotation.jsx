@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useStore } from '../../store'
 import { fmt } from '../../lib/format'
 import styles from './SectorRotation.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 const SECTORS = {
   'L1': ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','ADAUSDT','AVAXUSDT','DOTUSDT','ATOMUSDT','NEARUSDT','APTUSDT','SUIUSDT','TONUSDT','ICPUSDT','ALGOUSDT'],
@@ -47,7 +48,7 @@ export function SectorRotation() {
           results[sector] = { avgChg, totalVol, tokens: valid.sort((a,b) => b.change - a.change), best, worst, count: valid.length }
         }
         setSectorData(results)
-      } catch(_) {}
+      } catch(e){logSilent(e,'SectorRotation')}
       setLoading(false)
     }
     load()

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useStore } from '../../store'
 import { fmtPx } from '../../lib/format'
 import styles from './HarmonicScanner.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 // ── Fibonacci Ratios ──────────────────────────────────────────────────────────
 const FIB = {
@@ -491,7 +492,7 @@ export function HarmonicScanner() {
         patterns.forEach(p => all.push({
           ...p, pair: PAIRS[i], lastPrice: candles[candles.length - 1].c, candles
         }))
-      } catch(_) {}
+      } catch(e){logSilent(e,'HarmonicScanner')}
     }
 
     all.sort((a, b) => b.conf - a.conf)

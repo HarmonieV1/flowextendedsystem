@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../../store'
 import { fmtPx } from '../../lib/format'
 import styles from './AggregatedBook.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 const EXCHANGES = ['Binance','Bybit','Bitget']
 const LEVELS = 15
@@ -26,7 +27,7 @@ export function AggregatedBook() {
 
   useEffect(() => {
     setBooks({}); setMerged({bids:[],asks:[]})
-    Object.values(wsRefs.current).forEach(ws => { try{ws.close()}catch(_){} })
+    Object.values(wsRefs.current).forEach(ws => { try{ws.close()}catch(e){logSilent(e,'AggregatedBook')} })
     wsRefs.current = {}
 
     const sym = pair.toLowerCase()
@@ -48,7 +49,7 @@ export function AggregatedBook() {
           setMerged(mergeBooks(next))
           return next
         })
-      } catch(_) {}
+      } catch(e){logSilent(e,'AggregatedBook')}
     }
     wsRefs.current.Binance = bin
 
@@ -72,7 +73,7 @@ export function AggregatedBook() {
             return next
           })
         }
-      } catch(_) {}
+      } catch(e){logSilent(e,'AggregatedBook')}
     }
     wsRefs.current.Bybit = byb
 
@@ -99,11 +100,11 @@ export function AggregatedBook() {
             return next
           })
         }
-      } catch(_) {}
+      } catch(e){logSilent(e,'AggregatedBook')}
     }
     wsRefs.current.Bitget = bitget
 
-    return () => { Object.values(wsRefs.current).forEach(ws=>{try{ws.close()}catch(_){}}) }
+    return () => { Object.values(wsRefs.current).forEach(ws=>{try{ws.close()}catch(e){logSilent(e,'AggregatedBook')}}) }
   }, [pair])
 
   const maxVol = Math.max(

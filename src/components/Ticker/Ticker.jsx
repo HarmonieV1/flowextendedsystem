@@ -3,6 +3,8 @@ import { useStore } from '../../store'
 import { fmtPx } from '../../lib/format'
 import { HotkeyConfig } from '../HotkeyConfig/HotkeyConfig'
 import styles from './Ticker.module.css'
+import { logSilent } from '../../lib/errorMonitor'
+import { getLang, setLang, useT } from '../../lib/i18n'
 
 const ALL_PAIRS = [
   // Top 10
@@ -47,6 +49,13 @@ export function Ticker({ onOpenWallet, wsLive }) {
   const [pairSearch, setPairSearch] = useState('')
   const [pairModalOpen, setPairModalOpen] = useState(false)
   const [hotkeyOpen, setHotkeyOpen] = useState(false)
+  const [currentLang, setCurrentLang] = useState(getLang())
+
+  useEffect(() => {
+    const handler = () => setCurrentLang(getLang())
+    window.addEventListener('fxs:langChanged', handler)
+    return () => window.removeEventListener('fxs:langChanged', handler)
+  }, [])
   const [dark, toggleTheme] = useTheme()
   const searchRef = useRef(null)
 
@@ -55,9 +64,9 @@ export function Ticker({ onOpenWallet, wsLive }) {
     if (!pair) return
     const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair.toLowerCase()}@ticker`)
     ws.onmessage = e => {
-      try { setTicker(JSON.parse(e.data)) } catch(_) {}
+      try { setTicker(JSON.parse(e.data)) } catch(e){logSilent(e,'Ticker')}
     }
-    return () => { ws.onclose=null; try{ws.close()}catch(_){} }
+    return () => { ws.onclose=null; try{ws.close()}catch(e){logSilent(e,'Ticker')} }
   }, [pair])
 
   useEffect(() => {
@@ -116,9 +125,9 @@ export function Ticker({ onOpenWallet, wsLive }) {
           >⌨</button>
           <button
             className={styles.themeBtn}
-            onClick={() => { const { getLang, setLang } = require('../../lib/i18n'); const cur = getLang(); setLang(cur === 'fr' ? 'en' : 'fr'); location.reload() }}
+            onClick={() => { const cur = getLang(); setLang(cur === 'fr' ? 'en' : 'fr') }}
             title="FR / EN"
-          >{(() => { try { return require('../../lib/i18n').getLang().toUpperCase() } catch { return 'FR' } })()}</button>
+          >{currentLang.toUpperCase()}</button>
           <button
             className={styles.themeBtn}
             onClick={toggleTheme}

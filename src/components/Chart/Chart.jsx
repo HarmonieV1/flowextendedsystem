@@ -5,6 +5,7 @@ import { useKlines } from '../../hooks/useKlines'
 import { hasApiKeys, futuresGetPositions, getOpenOrders, getTpslOrders, placeTpsl, cancelTpsl } from '../../lib/bitunix'
 import { fmtPx } from '../../lib/format'
 import styles from './Chart.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 const TF_MAP = { '1m':'1m','5m':'5m','15m':'15m','1h':'1h','4h':'4h','1d':'1d' }
 
@@ -197,7 +198,7 @@ export function Chart({ onToggleOrders, ordersOpen }) {
 
     chart.timeScale().subscribeVisibleLogicalRangeChange(onVisibleRange)
     return () => {
-      try { chart.timeScale().unsubscribeVisibleLogicalRangeChange(onVisibleRange) } catch(_) {}
+      try { chart.timeScale().unsubscribeVisibleLogicalRangeChange(onVisibleRange) } catch(e){logSilent(e,'Chart')}
     }
   }, [pair, tf, klines.length > 0])
 
@@ -207,7 +208,7 @@ export function Chart({ onToggleOrders, ordersOpen }) {
 
     // Remove old lines
     posLinesRef.current.forEach(line => {
-      try { candleRef.current.removePriceLine(line) } catch(_) {}
+      try { candleRef.current.removePriceLine(line) } catch(e){logSilent(e,'Chart')}
     })
     posLinesRef.current = []
     tpslLinesRef.current = []
@@ -334,7 +335,7 @@ export function Chart({ onToggleOrders, ordersOpen }) {
         })
         drawLinesRef.current.push(line)
         setDrawMode(null)
-      } catch(_) {}
+      } catch(e){logSilent(e,'Chart')}
     }
     el.style.cursor = 'crosshair'
     el.addEventListener('click', onClick)
@@ -343,7 +344,7 @@ export function Chart({ onToggleOrders, ordersOpen }) {
 
   const clearDrawings = () => {
     drawLinesRef.current.forEach(line => {
-      try { candleRef.current.removePriceLine(line) } catch(_) {}
+      try { candleRef.current.removePriceLine(line) } catch(e){logSilent(e,'Chart')}
     })
     drawLinesRef.current = []
   }
@@ -396,7 +397,7 @@ export function Chart({ onToggleOrders, ordersOpen }) {
           price,
           title: `⇕ ${dragRef.current.type.toUpperCase()} → ${fmtPx(price)}`,
         })
-      } catch(_) {}
+      } catch(e){logSilent(e,'Chart')}
     }
 
     const onUp = async (e) => {
@@ -424,7 +425,7 @@ export function Chart({ onToggleOrders, ordersOpen }) {
       } catch(err) {
         console.error('[CHART] TPSL update failed:', err.message)
         // Revert line
-        try { drag.line.applyOptions({price: drag.startPrice, title: `${drag.type==='tp'?'✓ TP':'✕ SL'} ${fmtPx(drag.startPrice)}`}) } catch(_){}
+        try { drag.line.applyOptions({price: drag.startPrice, title: `${drag.type==='tp'?'✓ TP':'✕ SL'} ${fmtPx(drag.startPrice)}`}) } catch(e){logSilent(e,'Chart')}
       }
     }
 
@@ -458,7 +459,7 @@ export function Chart({ onToggleOrders, ordersOpen }) {
 
     // Remove old indicator series
     Object.values(maSeriesRef.current).forEach(s => {
-      try { chartRef.current.removeSeries(s) } catch(_) {}
+      try { chartRef.current.removeSeries(s) } catch(e){logSilent(e,'Chart')}
     })
     maSeriesRef.current = {}
 

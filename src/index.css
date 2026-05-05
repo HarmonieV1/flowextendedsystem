@@ -77,3 +77,59 @@ button:active { transform: scale(0.97); }
     overscroll-behavior: contain;
   }
 }
+
+/* ── MOBILE RESPONSIVE — global improvements ── */
+@media (max-width: 768px) {
+  #root { font-size: 13px; }
+
+  /* Touch targets — minimum 36px height for buttons */
+  button { min-height: 32px; }
+
+  /* Bigger fonts on mobile for readability */
+  .mobile-md { font-size: 13px !important; }
+  .mobile-lg { font-size: 15px !important; }
+
+  /* Prevent horizontal scroll */
+  body, #root { overflow-x: hidden; max-width: 100vw; }
+
+  /* Modals fullscreen on mobile */
+  [class*="modal"] { max-width: 95vw !important; }
+
+  /* Ticker — hide secondary info */
+  [class*="Ticker_themeBtn"] {
+    width: 30px; height: 30px;
+  }
+
+  /* Tab bars — bigger touch zones */
+  [class*="tab"] {
+    min-height: 36px;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+
+  /* Input fields — prevent iOS zoom on focus */
+  input, select, textarea { font-size: 16px !important; }
+
+  /* Better padding for mobile cards */
+  [class*="depositCard"], [class*="masterCard"], [class*="posRow"] {
+    padding: 12px !important;
+  }
+
+  /* Comparator — vertical stack on small screens */
+  [class*="Comparator_grid"] { grid-template-columns: 1fr 1fr !important; }
+
+  /* Intel tabs — wider scrollable */
+  [class*="MarketIntel_tabs"] { padding-bottom: 4px; }
+
+  /* Prevent text overflow in trade widgets */
+  [class*="FuturesWidget_summary"] [class*="sumRow"] span:last-child {
+    text-align: right;
+    word-break: break-all;
+  }
+}
+
+/* ── Touch-friendly spacing on small phones ── */
+@media (max-width: 380px) {
+  #root { font-size: 12px; }
+  [class*="tabs"] { font-size: 10px !important; }
+}

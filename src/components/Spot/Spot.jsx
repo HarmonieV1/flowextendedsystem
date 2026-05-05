@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useStore } from '../../store'
 import { fmtPx, fmt } from '../../lib/format'
-import { hasApiKeys, spotPlaceOrder, spotGetBalance, spotGetOrders, spotGetHistory } from '../../lib/bitunix'
+import { hasApiKeys, spotPlaceOrder, spotGetBalance, spotGetOrders, spotGetHistory, loadApiKeysAsync } from '../../lib/bitunix'
 import styles from './Spot.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 export function Spot({ onOpenWallet }) {
   const pair   = useStore(s => s.pair)
@@ -31,7 +32,7 @@ export function Spot({ onOpenWallet }) {
         const r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${pair}`, {signal: AbortSignal.timeout(3000)})
         const d = await r.json()
         if (d?.price) setFbPx(parseFloat(d.price))
-      } catch(_) {}
+      } catch(e){logSilent(e,'Spot')}
     }
     fetchPx()
     const t = setInterval(fetchPx, 5000)
@@ -41,14 +42,17 @@ export function Spot({ onOpenWallet }) {
   const px = lastPx > 0 ? lastPx : fallbackPx
 
   useEffect(() => {
-    setKeyed(hasApiKeys())
+    let cancelled = false
+    loadApiKeysAsync().catch(() => null).then(() => {
+      if (!cancelled) setKeyed(hasApiKeys())
+    })
     const h = () => { setKeyed(hasApiKeys()); if(hasApiKeys()) loadBal() }
     window.addEventListener('fxs:keysUpdated', h)
-    return () => window.removeEventListener('fxs:keysUpdated', h)
+    return () => { cancelled = true; window.removeEventListener('fxs:keysUpdated', h) }
   }, [])
 
   const loadBal = useCallback(async () => {
-    try { const d = await spotGetBalance(); setBal(Array.isArray(d)?d:[]) } catch(_) {}
+    try { const d = await spotGetBalance(); setBal(Array.isArray(d)?d:[]) } catch(e){logSilent(e,'Spot')}
   }, [])
 
   const loadOrders = useCallback(async () => {
@@ -127,7 +131,7 @@ export function Spot({ onOpenWallet }) {
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.3)
         osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.3)
         setTimeout(()=>ctx.close(),500)
-      } catch(_){}
+      } catch(e){logSilent(e,'Spot')}
       const flash=document.createElement('div')
       flash.style.cssText=`position:fixed;inset:0;z-index:9999;pointer-events:none;background:${side==='buy'?'rgba(140,198,63,0.08)':'rgba(255,59,92,0.08)'};animation:fxsFlash .4s ease-out forwards;`
       document.body.appendChild(flash); setTimeout(()=>flash.remove(),500)

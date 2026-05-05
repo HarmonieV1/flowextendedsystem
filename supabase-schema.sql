@@ -136,3 +136,29 @@ group by user_id, pair;
 -- View created:
 --   trade_pnl
 -- ============================================================
+
+-- ── Error Logs (server-side monitoring) ──
+-- Public insert allowed (anyone can report errors), select restricted to service role
+CREATE TABLE IF NOT EXISTS public.error_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  message TEXT NOT NULL,
+  context TEXT,
+  url TEXT,
+  user_agent TEXT,
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Index for recent errors
+CREATE INDEX IF NOT EXISTS idx_error_logs_created_at ON public.error_logs(created_at DESC);
+
+-- RLS — only service role can read; anon can insert (rate-limited via app logic)
+ALTER TABLE public.error_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow anon insert errors" ON public.error_logs
+  FOR INSERT TO anon
+  WITH CHECK (true);
+
+CREATE POLICY "Service role read errors" ON public.error_logs
+  FOR SELECT TO service_role
+  USING (true);

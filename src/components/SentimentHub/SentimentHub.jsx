@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../../store'
 import styles from './SentimentHub.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 const gauge = (val, max=100) => {
   const pct = Math.min(100, Math.max(0, val/max*100))
@@ -22,7 +23,7 @@ export function SentimentHub() {
       const fgR = await fetch('https://api.alternative.me/fng/?limit=3', {signal:AbortSignal.timeout(5000)})
       const fgD = await fgR.json()
       setFg(fgD.data)
-    } catch(_) {}
+    } catch(e){logSilent(e,'SentimentHub')}
 
     try {
       // Binance Long/Short ratio
@@ -30,14 +31,14 @@ export function SentimentHub() {
       const lsR = await fetch(`https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=${sym}&period=5m&limit=3`, {signal:AbortSignal.timeout(5000)})
       const lsD = await lsR.json()
       setLs(lsD)
-    } catch(_) {}
+    } catch(e){logSilent(e,'SentimentHub')}
 
     try {
       // Funding rate
       const frR = await fetch('https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT', {signal:AbortSignal.timeout(5000)})
       const frD = await frR.json()
       setFund(parseFloat(frD.lastFundingRate)*100)
-    } catch(_) {}
+    } catch(e){logSilent(e,'SentimentHub')}
 
     try {
       // Polymarket: BTC above $100K by end of 2025
@@ -47,7 +48,7 @@ export function SentimentHub() {
       if (btcMarket) {
         setPoly({ question: btcMarket.question, yes: btcMarket.outcomePrices?.[0], no: btcMarket.outcomePrices?.[1] })
       }
-    } catch(_) {}
+    } catch(e){logSilent(e,'SentimentHub')}
 
     setLoading(false)
   }

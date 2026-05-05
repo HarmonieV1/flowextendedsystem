@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { fmtPx } from '../../lib/format'
 import styles from './FlashCrash.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 const PAIRS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','ARBUSDT','LINKUSDT','AVAXUSDT']
 const THRESHOLD_PCT = 2.0
@@ -14,7 +15,7 @@ export function FlashCrash() {
   const wsRef = useRef(null)
 
   const start = () => {
-    if (wsRef.current) { try{wsRef.current.close()}catch(_){} }
+    if (wsRef.current) { try{wsRef.current.close()}catch(e){logSilent(e,'FlashCrash')} }
     const streams = PAIRS.map(p=>`${p.toLowerCase()}@kline_1m`).join('/')
     const ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`)
     wsRef.current = ws
@@ -62,17 +63,17 @@ export function FlashCrash() {
             }, ...prev].slice(0,20)
           })
         }
-      } catch(_) {}
+      } catch(e){logSilent(e,'FlashCrash')}
     }
   }
 
   const stop = () => {
-    if (wsRef.current) { try{wsRef.current.close()}catch(_){} }
+    if (wsRef.current) { try{wsRef.current.close()}catch(e){logSilent(e,'FlashCrash')} }
     setMonitoring(false)
   }
 
   // Auto-cleanup on unmount
-  useEffect(() => { return () => { try{wsRef.current?.close()}catch(_){} } }, [])
+  useEffect(() => { return () => { try{wsRef.current?.close()}catch(e){logSilent(e,'FlashCrash')} } }, [])
 
   const fmtTime = ts => new Date(ts).toLocaleTimeString('fr',{hour:'2-digit',minute:'2-digit',second:'2-digit'})
   const fmtAgo  = ts => {

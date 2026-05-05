@@ -1,28 +1,39 @@
-import { useState, Component } from 'react'
-import { MarketScanner } from '../MarketScanner/MarketScanner'
-import { PatternScanner } from '../PatternScanner/PatternScanner'
-import { HarmonicScanner } from '../HarmonicScanner/HarmonicScanner'
-import { MultiAccount } from '../MultiAccount/MultiAccount'
-import { CorrelationMatrix } from '../CorrelationMatrix/CorrelationMatrix'
-import { EconCalendar } from '../EconCalendar/EconCalendar'
-import { AlphaScanner } from '../AlphaScanner/AlphaScanner'
-import { DeltaFlow } from '../DeltaFlow/DeltaFlow'
-import { FundingRates } from '../FundingRates/FundingRates'
-import { OptionsFlow } from '../OptionsFlow/OptionsFlow'
-import { TokenUnlock } from '../TokenUnlock/TokenUnlock'
-import { LiquidityRadar } from '../LiquidityRadar/LiquidityRadar'
-import { DarkPool } from '../DarkPool/DarkPool'
-import { FlashCrash } from '../FlashCrash/FlashCrash'
-import { FlowDetector } from '../FlowDetector/FlowDetector'
-import { OrderBookHeatmap } from '../OrderBookHeatmap/OrderBookHeatmap'
-import { InsiderTracker } from '../InsiderTracker/InsiderTracker'
-import { AggregatedBook } from '../AggregatedBook/AggregatedBook'
-import { CryptoMap } from '../CryptoMap/CryptoMap'
-import { SectorRotation } from '../SectorRotation/SectorRotation'
-import { DevWalletTracker } from '../DevWalletTracker/DevWalletTracker'
-import { PreTradeSimulator } from '../PreTradeSimulator/PreTradeSimulator'
-import { SentimentHub } from '../SentimentHub/SentimentHub'
+import { useState, Component, lazy, Suspense } from 'react'
 import styles from './MarketIntel.module.css'
+
+// Lazy-loaded Intel components — chargés à la demande pour réduire le bundle initial
+const MarketScanner    = lazy(() => import('../MarketScanner/MarketScanner').then(m => ({ default: m.MarketScanner })))
+const PatternScanner   = lazy(() => import('../PatternScanner/PatternScanner').then(m => ({ default: m.PatternScanner })))
+const HarmonicScanner  = lazy(() => import('../HarmonicScanner/HarmonicScanner').then(m => ({ default: m.HarmonicScanner })))
+const MultiAccount     = lazy(() => import('../MultiAccount/MultiAccount').then(m => ({ default: m.MultiAccount })))
+const CorrelationMatrix= lazy(() => import('../CorrelationMatrix/CorrelationMatrix').then(m => ({ default: m.CorrelationMatrix })))
+const EconCalendar     = lazy(() => import('../EconCalendar/EconCalendar').then(m => ({ default: m.EconCalendar })))
+const AlphaScanner     = lazy(() => import('../AlphaScanner/AlphaScanner').then(m => ({ default: m.AlphaScanner })))
+const DeltaFlow        = lazy(() => import('../DeltaFlow/DeltaFlow').then(m => ({ default: m.DeltaFlow })))
+const FundingRates     = lazy(() => import('../FundingRates/FundingRates').then(m => ({ default: m.FundingRates })))
+const OptionsFlow      = lazy(() => import('../OptionsFlow/OptionsFlow').then(m => ({ default: m.OptionsFlow })))
+const TokenUnlock      = lazy(() => import('../TokenUnlock/TokenUnlock').then(m => ({ default: m.TokenUnlock })))
+const LiquidityRadar   = lazy(() => import('../LiquidityRadar/LiquidityRadar').then(m => ({ default: m.LiquidityRadar })))
+const DarkPool         = lazy(() => import('../DarkPool/DarkPool').then(m => ({ default: m.DarkPool })))
+const FlashCrash       = lazy(() => import('../FlashCrash/FlashCrash').then(m => ({ default: m.FlashCrash })))
+const FlowDetector     = lazy(() => import('../FlowDetector/FlowDetector').then(m => ({ default: m.FlowDetector })))
+const OrderBookHeatmap = lazy(() => import('../OrderBookHeatmap/OrderBookHeatmap').then(m => ({ default: m.OrderBookHeatmap })))
+const InsiderTracker   = lazy(() => import('../InsiderTracker/InsiderTracker').then(m => ({ default: m.InsiderTracker })))
+const AggregatedBook   = lazy(() => import('../AggregatedBook/AggregatedBook').then(m => ({ default: m.AggregatedBook })))
+const CryptoMap        = lazy(() => import('../CryptoMap/CryptoMap').then(m => ({ default: m.CryptoMap })))
+const SectorRotation   = lazy(() => import('../SectorRotation/SectorRotation').then(m => ({ default: m.SectorRotation })))
+const DevWalletTracker = lazy(() => import('../DevWalletTracker/DevWalletTracker').then(m => ({ default: m.DevWalletTracker })))
+const PreTradeSimulator= lazy(() => import('../PreTradeSimulator/PreTradeSimulator').then(m => ({ default: m.PreTradeSimulator })))
+const SentimentHub     = lazy(() => import('../SentimentHub/SentimentHub').then(m => ({ default: m.SentimentHub })))
+
+// Loading fallback
+const IntelLoader = () => (
+  <div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:40,color:'var(--txt3)',fontSize:11,gap:8}}>
+    <div style={{width:14,height:14,border:'2px solid var(--brd)',borderTopColor:'var(--grn)',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>
+    <span>Chargement...</span>
+    <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+  </div>
+)
 
 // Error boundary pour isoler les crashes des composants Intel
 class IntelBoundary extends Component {
@@ -137,27 +148,29 @@ export function MarketIntel() {
       {/* Content */}
       <div className={styles.content}>
         <IntelBoundary key={tab}>
-          {tab === 'scanner'  && <MarketScanner />}
-          {tab === 'patterns' && <PatternScanner />}
-          {tab === 'harmonic' && <HarmonicScanner />}
-          {tab === 'sentiment'&& <SentimentHub />}
-          {tab === 'corr'      && <CorrelationMatrix />}
-          {tab === 'calendar'  && <EconCalendar />}
-          {tab === 'heatmap'  && <OrderBookHeatmap />}
-          {tab === 'aggbook'  && <AggregatedBook />}
-          {tab === 'radar'    && <LiquidityRadar />}
-          {tab === 'delta'    && <DeltaFlow />}
-          {tab === 'funding'  && <FundingRates />}
-          {tab === 'options'  && <OptionsFlow />}
-          {tab === 'alpha'   && <AlphaScanner />}
-          {tab === 'insider'  && <InsiderTracker />}
-          {tab === 'multiaccount' && <MultiAccount />}
-          {tab === 'unlock'   && <TokenUnlock />}
-          {tab === 'flowdetect' && <FlowDetector />}
-          {tab === 'cryptomap' && <CryptoMap />}
-          {tab === 'sectors'   && <SectorRotation />}
-          {tab === 'devwallet' && <DevWalletTracker />}
-          {tab === 'pretrade'  && <PreTradeSimulator />}
+          <Suspense fallback={<IntelLoader />}>
+            {tab === 'scanner'  && <MarketScanner />}
+            {tab === 'patterns' && <PatternScanner />}
+            {tab === 'harmonic' && <HarmonicScanner />}
+            {tab === 'sentiment'&& <SentimentHub />}
+            {tab === 'corr'      && <CorrelationMatrix />}
+            {tab === 'calendar'  && <EconCalendar />}
+            {tab === 'heatmap'  && <OrderBookHeatmap />}
+            {tab === 'aggbook'  && <AggregatedBook />}
+            {tab === 'radar'    && <LiquidityRadar />}
+            {tab === 'delta'    && <DeltaFlow />}
+            {tab === 'funding'  && <FundingRates />}
+            {tab === 'options'  && <OptionsFlow />}
+            {tab === 'alpha'   && <AlphaScanner />}
+            {tab === 'insider'  && <InsiderTracker />}
+            {tab === 'multiaccount' && <MultiAccount />}
+            {tab === 'unlock'   && <TokenUnlock />}
+            {tab === 'flowdetect' && <FlowDetector />}
+            {tab === 'cryptomap' && <CryptoMap />}
+            {tab === 'sectors'   && <SectorRotation />}
+            {tab === 'devwallet' && <DevWalletTracker />}
+            {tab === 'pretrade'  && <PreTradeSimulator />}
+          </Suspense>
         </IntelBoundary>
       </div>
     </div>

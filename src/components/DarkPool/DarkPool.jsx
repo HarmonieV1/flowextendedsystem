@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { fmtPx } from '../../lib/format'
 import styles from './DarkPool.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 const PAIRS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT']
 const ANOMALY_THRESHOLD = 2.5 // price moves X times avg without volume
@@ -13,7 +14,7 @@ export function DarkPool() {
   const dataRef   = useRef({}) // {sym: {prices:[], volumes:[], avgVolume:0}}
 
   const start = () => {
-    if (wsRef.current) { try{wsRef.current.close()}catch(_){} }
+    if (wsRef.current) { try{wsRef.current.close()}catch(e){logSilent(e,'DarkPool')} }
     const streams = PAIRS.map(p=>`${p.toLowerCase()}@kline_1m`).join('/')
     const ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`)
     wsRef.current = ws
@@ -64,14 +65,14 @@ export function DarkPool() {
             return [signal, ...prev].slice(0,20)
           })
         }
-      } catch(_) {}
+      } catch(e){logSilent(e,'DarkPool')}
     }
   }
 
-  const stop = () => { try{wsRef.current?.close()}catch(_){}; setMon(false) }
+  const stop = () => { try{wsRef.current?.close()}catch(e){logSilent(e,'DarkPool')}; setMon(false) }
 
   // Auto-cleanup on unmount
-  useEffect(() => { return () => { try{wsRef.current?.close()}catch(_){} } }, [])
+  useEffect(() => { return () => { try{wsRef.current?.close()}catch(e){logSilent(e,'DarkPool')} } }, [])
 
   const fmtTime = ts => new Date(ts).toLocaleTimeString('fr',{hour:'2-digit',minute:'2-digit',second:'2-digit'})
   const fmtAgo  = ts => { const s=Math.floor((Date.now()-ts)/1000); return s<60?`${s}s`:`${Math.floor(s/60)}m` }

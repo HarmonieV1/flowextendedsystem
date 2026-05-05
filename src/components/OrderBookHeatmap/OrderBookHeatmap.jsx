@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../../store'
 import { fmtPx } from '../../lib/format'
 import styles from './OrderBookHeatmap.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 const HISTORY_MS = 30000
 
@@ -42,7 +43,7 @@ export function OrderBookHeatmap() {
         if (histRef.current.length > 20) {
           histRef.current = histRef.current.filter(h => h.t >= cut)
         }
-      } catch(_) {}
+      } catch(e){logSilent(e,'OrderBookHeatmap')}
     }
 
     const draw = () => {
@@ -193,7 +194,7 @@ export function OrderBookHeatmap() {
     return () => {
       dead = true
       ws.onopen = ws.onclose = ws.onerror = ws.onmessage = null
-      try { ws.close() } catch(_) {}
+      try { ws.close() } catch(e){logSilent(e,'OrderBookHeatmap')}
       if (frameRef.current) cancelAnimationFrame(frameRef.current)
     }
   }, [pair])

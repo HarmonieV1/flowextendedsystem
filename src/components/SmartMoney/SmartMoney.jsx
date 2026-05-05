@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import styles from './SmartMoney.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 const PAIRS = ['btcusdt','ethusdt','solusdt','bnbusdt','xrpusdt','linkusdt','avaxusdt','arbusdt']
 const MIN_USD = 25_000
@@ -39,7 +40,7 @@ export function SmartMoney() {
             time:    Date.now(),
             whale:   usd >= 500_000,
           }, ...prev.slice(0, 80)])
-        } catch(_) {}
+        } catch(e){logSilent(e,'SmartMoney')}
       }
 
       ws.onerror = () => setWsStatus('error')
@@ -57,7 +58,7 @@ export function SmartMoney() {
       dead = true
       clearTimeout(retryT)
       clearInterval(tick)
-      if (ws) { ws.onclose=null; try{ws.close()}catch(_){} }
+      if (ws) { ws.onclose=null; try{ws.close()}catch(e){logSilent(e,'SmartMoney')} }
     }
   }, [])
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useReadContract } from 'wagmi'
 import { erc20Abi, formatUnits } from 'viem'
 import styles from './MultiAccount.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 const CHAIN_COLORS = { 1:'#627eea', 42161:'#9dcced', 8453:'#0052ff' }
 const CHAIN_NAMES  = { 1:'Ethereum', 42161:'Arbitrum', 8453:'Base' }
@@ -142,7 +143,7 @@ function WalletRow({ wallet, color, ethPx, onRemove }) {
         })
         const d = await r.json()
         if (d.result) setEth(parseInt(d.result,16) / 1e18)
-      } catch(_) {}
+      } catch(e){logSilent(e,'MultiAccount')}
     }
     fetchBalances()
   }, [wallet.address])

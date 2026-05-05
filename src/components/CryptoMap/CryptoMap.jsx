@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../../store'
 import styles from './CryptoMap.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 export function CryptoMap() {
   const setPair = useStore(s => s.setPair)
@@ -31,7 +32,7 @@ export function CryptoMap() {
           .sort((a,b) => b.vol - a.vol)
           .slice(0, 150)
         setData(usdt)
-      } catch(_) {}
+      } catch(e){logSilent(e,'CryptoMap')}
       setLoading(false)
     }
     load()

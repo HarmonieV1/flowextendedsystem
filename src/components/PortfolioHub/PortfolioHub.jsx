@@ -6,6 +6,7 @@ import { TradeJournal } from '../TradeJournal/TradeJournal'
 import { PositionSizer } from '../PositionSizer/PositionSizer'
 import { fmt, fmtPx } from '../../lib/format'
 import styles from './PortfolioHub.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 export function PortfolioHub({ onOpenWallet }) {
   const [tab, setTab] = useState('portfolio')
@@ -38,7 +39,7 @@ export function PortfolioHub({ onOpenWallet }) {
       setFutBal(fb)
       setSpotBal(Array.isArray(sb)?sb:[])
       setPos(Array.isArray(pos)?pos:[])
-    } catch(_) {}
+    } catch(e){logSilent(e,'PortfolioHub')}
     setLoading(false)
   }, [keyed])
 
@@ -57,7 +58,7 @@ export function PortfolioHub({ onOpenWallet }) {
         const r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${coin}USDT`, {signal: AbortSignal.timeout(3000)})
         const d = await r.json()
         if (d?.price) prices[coin] = parseFloat(d.price)
-      } catch(_) {}
+      } catch(e){logSilent(e,'PortfolioHub')}
     }))
     if (Object.keys(prices).length) setSpotPrices(p => ({...p, ...prices}))
   }, [spotPrices])

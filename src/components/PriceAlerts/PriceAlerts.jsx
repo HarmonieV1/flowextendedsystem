@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../../store'
 import { fmtPx } from '../../lib/format'
 import styles from './PriceAlerts.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 const hasNotif = typeof Notification !== 'undefined'
 
@@ -20,12 +21,12 @@ export function PriceAlerts() {
     try {
       const saved = JSON.parse(localStorage.getItem('fxs_alerts') || '[]')
       setAlerts(saved)
-    } catch(_) {}
+    } catch(e){logSilent(e,'PriceAlerts')}
   }, [])
 
   const save = (arr) => {
     setAlerts(arr)
-    try { localStorage.setItem('fxs_alerts', JSON.stringify(arr)) } catch(_) {}
+    try { localStorage.setItem('fxs_alerts', JSON.stringify(arr)) } catch(e){logSilent(e,'PriceAlerts')}
   }
 
   // Check alerts on price change

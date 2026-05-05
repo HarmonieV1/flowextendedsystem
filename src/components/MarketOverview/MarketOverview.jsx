@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../../store'
 import styles from './MarketOverview.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 export function MarketOverview() {
   const [mcap, setMcap] = useState(null)
@@ -15,7 +16,7 @@ export function MarketOverview() {
         if (!r.ok) return
         const d = await r.json()
         setMcap(d?.data?.total_market_cap?.usd || null)
-      } catch(_) {}
+      } catch(e){logSilent(e,'MarketOverview')}
     }
     load()
     const t = setInterval(load, 5 * 60 * 1000)

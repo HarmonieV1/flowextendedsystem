@@ -6,9 +6,11 @@ import {
   getPrice, buildTx, fmtTokenAmount, toBaseUnits,
   CHAINS, POPULAR_TOKENS, NATIVE_TOKEN, FEE_BPS, FEE_RECIPIENT
 } from '../../lib/swap0x'
+import { SolanaSwap } from './SolanaSwap'
 import styles from './SwapWidget.module.css'
 
 const DEFAULT_CHAIN = 42161
+const SOLANA_CHAIN = 'solana'
 
 export function SwapWidget({ onOpenWallet }) {
   const { address, isConnected, chain } = useAccount()
@@ -131,6 +133,32 @@ export function SwapWidget({ onOpenWallet }) {
   const buyAmt = priceRoute ? fmtTokenAmount(priceRoute.destAmount, buyTok.decimals) : null
   const route  = priceRoute?.bestRoute?.[0]?.swaps || []
   const chainInfo = CHAINS[chainId]
+  const [showSolana, setShowSolana] = useState(false)
+
+  // If user picked Solana, render the Solana panel instead
+  if (showSolana) {
+    return (
+      <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+        <div className={styles.header} style={{paddingBottom:0}}>
+          <span className={styles.title}>⚡ Swap</span>
+          <div className={styles.chainRow}>
+            {Object.entries(CHAINS).map(([id, ch]) => (
+              <button key={id} className={styles.chainBtn} onClick={() => {
+                setShowSolana(false); setChainId(+id)
+                const toks = POPULAR_TOKENS[+id] || POPULAR_TOKENS[DEFAULT_CHAIN]
+                setSellTok(toks[0]); setBuyTok(toks[1] || toks[0])
+              }}>{ch.name}</button>
+            ))}
+            <button className={styles.chainBtn + ' ' + styles.chainOn}
+              style={{background:'rgba(153,69,255,.1)',borderColor:'rgba(153,69,255,.3)',color:'#9945ff'}}>
+              Solana
+            </button>
+          </div>
+        </div>
+        <SolanaSwap />
+      </div>
+    )
+  }
 
   return (
     <div className={styles.wrap}>
@@ -149,6 +177,10 @@ export function SwapWidget({ onOpenWallet }) {
               }}
             >{ch.name}</button>
           ))}
+          <button className={styles.chainBtn} onClick={() => setShowSolana(true)}
+            style={{borderColor:'rgba(153,69,255,.2)',color:'#9945ff'}}>
+            Solana
+          </button>
         </div>
       </div>
 

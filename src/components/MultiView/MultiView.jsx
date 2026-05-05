@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store'
 import { fmtPx, fmtVol } from '../../lib/format'
 import styles from './MultiView.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 const AVAILABLE_PAIRS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','DOGEUSDT','ADAUSDT','AVAXUSDT']
 
@@ -105,7 +106,7 @@ function Tile({ pair, onClick }) {
         setHi(parseFloat(d.h))
         setLo(parseFloat(d.l))
         setVol(parseFloat(d.q))
-      } catch (_) {}
+      } catch(e){logSilent(e,'MultiView')}
     }
 
     // Kline WS
@@ -122,7 +123,7 @@ function Tile({ pair, onClick }) {
           else { arr.push(c); if (arr.length > 80) arr.shift() }
           return arr
         })
-      } catch (_) {}
+      } catch(e){logSilent(e,'MultiView')}
     }
 
     // BookTicker for spread
@@ -133,13 +134,13 @@ function Tile({ pair, onClick }) {
         const d = JSON.parse(e.data)
         const bid = parseFloat(d.b), ask = parseFloat(d.a)
         if (isFinite(bid) && isFinite(ask) && bid > 0) setSpread((ask - bid) / bid * 100)
-      } catch (_) {}
+      } catch(e){logSilent(e,'MultiView')}
     }
 
     return () => {
       [ticker, kline, depth].forEach(ws => {
         ws.onclose = null
-        try { ws.close() } catch (_) {}
+        try { ws.close() } catch(e){logSilent(e,'MultiView')}
       })
     }
   }, [pair])

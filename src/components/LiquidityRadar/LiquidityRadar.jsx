@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../../store'
 import { fmtPx } from '../../lib/format'
 import styles from './LiquidityRadar.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 export function LiquidityRadar() {
   const pair   = useStore(s => s.pair)
@@ -14,7 +15,7 @@ export function LiquidityRadar() {
 
   useEffect(() => {
     setBids([]); setAsks([]); setLive(false)
-    if (wsRef.current) { try{wsRef.current.close()}catch(_){} }
+    if (wsRef.current) { try{wsRef.current.close()}catch(e){logSilent(e,'LiquidityRadar')} }
 
     const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair.toLowerCase()}@depth20@100ms`)
     wsRef.current = ws
@@ -30,9 +31,9 @@ export function LiquidityRadar() {
         if (newBids.length && newAsks.length) {
           setMidPx((newBids[0][0] + newAsks[0][0]) / 2)
         }
-      } catch(_) {}
+      } catch(e){logSilent(e,'LiquidityRadar')}
     }
-    return () => { try{ws.close()}catch(_){} }
+    return () => { try{ws.close()}catch(e){logSilent(e,'LiquidityRadar')} }
   }, [pair])
 
   const canvasRef = useRef(null)

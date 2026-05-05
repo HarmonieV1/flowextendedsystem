@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useStore } from '../store'
+import { logSilent } from '../lib/errorMonitor'
 
 const BINANCE_REST = 'https://api.binance.com/api/v3/klines'
 const BINANCE_WS = 'wss://stream.binance.com:9443/ws/'
@@ -20,7 +21,7 @@ export function useKlines() {
     // Close existing WS
     if (wsRef.current) {
       wsRef.current.onclose = null
-      try { wsRef.current.close() } catch (_) {}
+      try { wsRef.current.close() } catch(e){logSilent(e,'useKlines')}
       wsRef.current = null
     }
 
@@ -60,7 +61,7 @@ export function useKlines() {
           v: parseFloat(k.v),
         }
         if (isFinite(c.c)) updateLastKline(c)
-      } catch (_) {}
+      } catch(e){logSilent(e,'useKlines')}
     }
 
     ws.onclose = () => {
@@ -75,7 +76,7 @@ export function useKlines() {
       mountedRef.current = false
       if (wsRef.current) {
         wsRef.current.onclose = null
-        try { wsRef.current.close() } catch (_) {}
+        try { wsRef.current.close() } catch(e){logSilent(e,'useKlines')}
       }
     }
   }, [load])

@@ -2,13 +2,15 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAccount, usePublicClient } from 'wagmi'
 import { useStore } from '../../store'
 import { fmtPx, fmt } from '../../lib/format'
+import { useT } from '../../lib/i18n'
 import {
   hasApiKeys, futuresPlaceOrder, futuresGetBalance,
   futuresGetPositions, futuresClosePosition, futuresSetLeverage,
-  getOpenOrders, getMyTrades
+  getOpenOrders, getMyTrades, loadApiKeysAsync
 } from '../../lib/bitunix'
-import { hasBitgetKeys, bitgetFuturesBalance, bitgetGetPositions, bitgetPlaceOrder, bitgetClosePosition } from '../../lib/bitget'
+import { hasBitgetKeys, bitgetFuturesBalance, bitgetGetPositions, bitgetPlaceOrder, bitgetClosePosition, bitgetGetOrders, bitgetGetHistory, loadBitgetKeysAsync } from '../../lib/bitget'
 import styles from './FuturesWidget.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 const LEVERAGE_PRESETS = [2,5,10,20,50,100]
 const EXCHANGES = [
@@ -17,12 +19,17 @@ const EXCHANGES = [
 ]
 
 export function FuturesWidget({ onOpenWallet }) {
+  const t = useT()
   const pair   = useStore(s => s.pair)
   const lastPx = useStore(s => s.lastPx)
   const base   = pair.replace('USDT','')
 
   const [keyed, setKeyed]     = useState(false)
   const [exchange, setExchange] = useState('bitunix')
+  const [sorEnabled, setSorEnabled] = useState(() => {
+    try { return localStorage.getItem('fxs_sor_enabled') === 'true' } catch { return false }
+  })
+  const comparatorPrices = useStore(s => s.comparatorPrices) || {}
   const [side, setSide]       = useState('long')
   const [orderType, setOType] = useState('market')
   const [qty, setQty]         = useState('')
@@ -43,12 +50,19 @@ export function FuturesWidget({ onOpenWallet }) {
 
   const posUSD = qty && lastPx ? parseFloat(qty)*lastPx : 0
 
-  // Check clés — re-check when exchange changes
+  // Check clés — re-check when exchange changes; wait for async load
   useEffect(() => {
-    const check = () => setKeyed(exchange === 'bitget' ? hasBitgetKeys() : hasApiKeys())
+    let cancelled = false
+    const check = async () => {
+      // Ensure encrypted keys are loaded from IndexedDB
+      await Promise.all([loadApiKeysAsync().catch(()=>null), loadBitgetKeysAsync().catch(()=>null)])
+      if (cancelled) return
+      setKeyed(exchange === 'bitget' ? hasBitgetKeys() : hasApiKeys())
+    }
     check()
-    window.addEventListener('fxs:keysUpdated', check)
-    return () => window.removeEventListener('fxs:keysUpdated', check)
+    const onUpdate = () => setKeyed(exchange === 'bitget' ? hasBitgetKeys() : hasApiKeys())
+    window.addEventListener('fxs:keysUpdated', onUpdate)
+    return () => { cancelled = true; window.removeEventListener('fxs:keysUpdated', onUpdate) }
   }, [exchange])
 
   // Keyboard shortcuts
@@ -85,9 +99,11 @@ export function FuturesWidget({ onOpenWallet }) {
     try {
       if (exchange === 'bitget') {
         // Bitget API
-        const [bal, pos] = await Promise.all([
+        const [bal, pos, ords, hist] = await Promise.all([
           bitgetFuturesBalance().catch(()=>null),
           bitgetGetPositions().catch(()=>null),
+          bitgetGetOrders().catch(()=>null),
+          bitgetGetHistory().catch(()=>null),
         ])
         // Bitget balance: array of accounts, find USDT
         if (Array.isArray(bal)) {
@@ -97,8 +113,12 @@ export function FuturesWidget({ onOpenWallet }) {
           setBalance(bal)
         }
         setPos(Array.isArray(pos) ? pos : [])
-        setOrders([]) // Bitget orders: not wired yet
-        setHistory([]) // Bitget history: not wired yet
+        // Bitget orders: { entrustedList: [...] }
+        const orderArr = Array.isArray(ords) ? ords : ords?.entrustedList || []
+        setOrders(orderArr)
+        // Bitget history: { fillList: [...] }
+        const histArr = Array.isArray(hist) ? hist : hist?.fillList || []
+        setHistory(histArr)
       } else {
         // Bitunix API (existing logic)
         const [bal, pos, ords, hist] = await Promise.all([
@@ -118,6 +138,25 @@ export function FuturesWidget({ onOpenWallet }) {
 
   // Auto-load data when keys are connected
   useEffect(() => { if (keyed) loadData() }, [keyed])
+
+  // Persist SOR toggle
+  useEffect(() => {
+    try { localStorage.setItem('fxs_sor_enabled', String(sorEnabled)) } catch {}
+  }, [sorEnabled])
+
+  // Compute best exchange based on comparator prices when SOR is on
+  const getBestExchange = useCallback(() => {
+    if (!sorEnabled) return exchange
+    const isLong = side === 'long'
+    const bitunixPx = isLong ? comparatorPrices.bitunix?.ask : comparatorPrices.bitunix?.bid
+    const bitgetPx  = isLong ? comparatorPrices.bitget?.ask  : comparatorPrices.bitget?.bid
+    if (!bitunixPx && !bitgetPx) return exchange
+    if (!bitgetPx) return 'bitunix'
+    if (!bitunixPx) return hasBitgetKeys() ? 'bitget' : 'bitunix'
+    const bitgetWins = isLong ? bitgetPx < bitunixPx : bitgetPx > bitunixPx
+    if (bitgetWins && hasBitgetKeys()) return 'bitget'
+    return 'bitunix'
+  }, [sorEnabled, exchange, side, comparatorPrices])
   // Refresh every 10s when on positions/orders tab
   useEffect(() => {
     if (!keyed || tab==='trade') return
@@ -130,11 +169,11 @@ export function FuturesWidget({ onOpenWallet }) {
 
   const handleTrade = async () => {
     setErr(''); setOk('')
-    if (!qty || parseFloat(qty)<=0) { setErr('Entre une quantité'); return }
+    if (!qty || parseFloat(qty)<=0) { setErr(t('enter_qty')); return }
     
     // Rate limit client: 1 ordre par seconde
     const now = Date.now()
-    if (now - lastOrderRef.current < 1000) { setErr('Attends 1s entre chaque ordre'); return }
+    if (now - lastOrderRef.current < 1000) { setErr(t('wait_1s')); return }
     
     // Confirmation gros ordres: si marge > 50% du solde disponible
     const margin = posUSD / leverage
@@ -147,7 +186,8 @@ export function FuturesWidget({ onOpenWallet }) {
     lastOrderRef.current = now
     setSub(true)
     try {
-      if (exchange === 'bitget') {
+      const targetExchange = getBestExchange()
+      if (targetExchange === 'bitget') {
         // Bitget order
         await bitgetPlaceOrder({
           symbol: pair,
@@ -171,8 +211,9 @@ export function FuturesWidget({ onOpenWallet }) {
           slPrice: sl?parseFloat(sl):undefined,
         })
       }
-      // Success feedback
-      setOk(`✓ ${side==='long'?'Long ↑':'Short ↓'} ${base} ×${leverage} envoyé`)
+      // Success feedback — show actual exchange used (in case SOR routed elsewhere)
+      const usedLabel = targetExchange === 'bitget' ? 'Bitget' : 'Bitunix'
+      setOk(`✓ ${side==='long'?'Long ↑':'Short ↓'} ${base} ×${leverage} → ${usedLabel}`)
       playOrderSound(side==='long')
       flashScreen(side==='long')
       setQty(''); setTp(''); setSl('')
@@ -205,7 +246,7 @@ export function FuturesWidget({ onOpenWallet }) {
       osc.start(ctx.currentTime)
       osc.stop(ctx.currentTime + 0.3)
       setTimeout(() => ctx.close(), 500)
-    } catch(_) {}
+    } catch(e){logSilent(e,'FuturesWidget')}
   }
 
   // Flash screen effect
@@ -241,7 +282,7 @@ export function FuturesWidget({ onOpenWallet }) {
         } else {
           await futuresClosePosition({symbol:p.symbol, side:isLong?'long':'short', qty:p.qty, positionId:p.positionId})
         }
-      } catch(_) {}
+      } catch(e){logSilent(e,'FuturesWidget')}
     }
     playOrderSound(false)
     flashScreen(false)
@@ -280,6 +321,28 @@ export function FuturesWidget({ onOpenWallet }) {
         ))}
       </div>
 
+      {/* SOR Toggle — appears when both exchanges have keys */}
+      {hasApiKeys() && hasBitgetKeys() && (
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'6px 12px',background:sorEnabled?'rgba(140,198,63,.05)':'transparent',borderBottom:'1px solid var(--brd)',fontSize:10}}>
+          <div style={{display:'flex',alignItems:'center',gap:6}}>
+            <span style={{color:sorEnabled?'var(--grn)':'var(--txt3)',fontWeight:700}}>⚡ Smart Order Routing</span>
+            {sorEnabled && (() => {
+              const best = getBestExchange()
+              return best !== exchange ? (
+                <span style={{fontSize:9,color:'var(--grn)',padding:'2px 6px',background:'rgba(140,198,63,.1)',borderRadius:3}}>
+                  → {best === 'bitget' ? 'Bitget' : 'Bitunix'} (meilleur prix)
+                </span>
+              ) : null
+            })()}
+          </div>
+          <label style={{display:'flex',alignItems:'center',gap:6,cursor:'pointer'}}>
+            <input type="checkbox" checked={sorEnabled} onChange={e=>setSorEnabled(e.target.checked)}
+              style={{cursor:'pointer'}}/>
+            <span style={{color:sorEnabled?'var(--grn)':'var(--txt3)',fontSize:9}}>{sorEnabled?'ON':'OFF'}</span>
+          </label>
+        </div>
+      )}
+
       {!keyed ? (
         <div className={styles.noKey}>
           <div className={styles.noKeyTitle}>⚙️ Connecte ton compte {exchange === 'bitget' ? 'Bitget' : 'Bitunix'}</div>
@@ -296,7 +359,7 @@ export function FuturesWidget({ onOpenWallet }) {
           <div className={styles.statsBar}>
             {avail!==null && <span className={styles.statV}>{fmt(avail,2)} USDT dispo</span>}
             <div className={styles.tabBtns}>
-              <button className={styles.tabBtn+(tab==='trade'?' '+styles.tabOn:'')} onClick={()=>setTab('trade')}>Trade</button>
+              <button className={styles.tabBtn+(tab==='trade'?' '+styles.tabOn:'')} onClick={()=>setTab('trade')}>{t('trade')}</button>
               <button className={styles.tabBtn+(tab==='positions'?' '+styles.tabOn:'')} onClick={()=>{setTab('positions');loadData()}}>
                 Positions{positions.length>0&&<span className={styles.badge}>{positions.length}</span>}
               </button>
@@ -362,18 +425,18 @@ export function FuturesWidget({ onOpenWallet }) {
               <button className={styles.tpslBtn+(tpsl?' '+styles.tpslOn:'')} onClick={()=>setTpsl(v=>!v)}>{tpsl?'▾':'▸'} TP / SL</button>
               {tpsl && (
                 <div className={styles.tpslGrid}>
-                  <div className={styles.tpslF}><span className={styles.tpL}>Take Profit</span><input className={styles.tpslIn} type="number" value={tp} onChange={e=>setTp(e.target.value)} placeholder="Prix TP"/></div>
-                  <div className={styles.tpslF}><span className={styles.slL}>Stop Loss</span><input className={styles.tpslIn} type="number" value={sl} onChange={e=>setSl(e.target.value)} placeholder="Prix SL"/></div>
+                  <div className={styles.tpslF}><span className={styles.tpL}>{t('take_profit')}</span><input className={styles.tpslIn} type="number" value={tp} onChange={e=>setTp(e.target.value)} placeholder={t('tp_price')}/></div>
+                  <div className={styles.tpslF}><span className={styles.slL}>{t('stop_loss')}</span><input className={styles.tpslIn} type="number" value={sl} onChange={e=>setSl(e.target.value)} placeholder={t('sl_price')}/></div>
                 </div>
               )}
               {qty&&parseFloat(qty)>0&&(
                 <div className={styles.summary}>
-                  <div className={styles.sumRow}><span>Position</span><span>${fmt(posUSD,2)}</span></div>
-                  <div className={styles.sumRow}><span>Marge requise</span><span>${fmt(posUSD/leverage,2)} USDT</span></div>
-                  <div className={styles.sumRow}><span>Levier</span><span>{leverage}×</span></div>
-                  <div className={styles.sumRow}><span>Frais est.</span><span>${fmt(posUSD*0.0005,4)}</span></div>
-                  {tp&&<div className={styles.sumRow}><span>TP PnL</span><span style={{color:'var(--grn)'}}>+${fmt(Math.abs(parseFloat(tp)-lastPx)*parseFloat(qty),2)}</span></div>}
-                  {sl&&<div className={styles.sumRow}><span>SL Perte</span><span style={{color:'var(--red)'}}>-${fmt(Math.abs(parseFloat(sl)-lastPx)*parseFloat(qty),2)}</span></div>}
+                  <div className={styles.sumRow}><span>{t('position')}</span><span>${fmt(posUSD,2)}</span></div>
+                  <div className={styles.sumRow}><span>{t('margin_required')}</span><span>${fmt(posUSD/leverage,2)} USDT</span></div>
+                  <div className={styles.sumRow}><span>{t('leverage')}</span><span>{leverage}×</span></div>
+                  <div className={styles.sumRow}><span>{t('fees_est')}</span><span>${fmt(posUSD*0.0005,4)}</span></div>
+                  {tp&&<div className={styles.sumRow}><span>{t('tp_pnl')}</span><span style={{color:'var(--grn)'}}>+${fmt(Math.abs(parseFloat(tp)-lastPx)*parseFloat(qty),2)}</span></div>}
+                  {sl&&<div className={styles.sumRow}><span>{t('sl_loss')}</span><span style={{color:'var(--red)'}}>-${fmt(Math.abs(parseFloat(sl)-lastPx)*parseFloat(qty),2)}</span></div>}
                   {tp&&sl&&(()=>{
                     const tpPnl = Math.abs(parseFloat(tp)-lastPx)*parseFloat(qty)
                     const slPnl = Math.abs(parseFloat(sl)-lastPx)*parseFloat(qty)
@@ -384,9 +447,9 @@ export function FuturesWidget({ onOpenWallet }) {
                     const kelly = rr > 0 ? Math.max(0, (estWinRate * rr - (1-estWinRate)) / rr * 100) : 0
                     return (
                       <div style={{borderTop:'1px solid var(--brd)',paddingTop:6,marginTop:4}}>
-                        <div className={styles.sumRow}><span>Risk/Reward</span><span style={{color:rr>=2?'var(--grn)':rr>=1?'#f59e0b':'var(--red)',fontWeight:700}}>1:{rr.toFixed(1)} {rr>=2?'✓':rr>=1?'~':'⚠'}</span></div>
-                        <div className={styles.sumRow}><span>Portfolio risk</span><span style={{color:portfolioPct>50?'var(--red)':portfolioPct>25?'#f59e0b':'var(--grn)'}}>{portfolioPct.toFixed(1)}%</span></div>
-                        <div className={styles.sumRow}><span>Kelly optimal</span><span style={{color:'var(--txt3)'}}>{kelly.toFixed(0)}%</span></div>
+                        <div className={styles.sumRow}><span>{t('risk_reward')}</span><span style={{color:rr>=2?'var(--grn)':rr>=1?'#f59e0b':'var(--red)',fontWeight:700}}>1:{rr.toFixed(1)} {rr>=2?'✓':rr>=1?'~':'⚠'}</span></div>
+                        <div className={styles.sumRow}><span>{t('portfolio_risk')}</span><span style={{color:portfolioPct>50?'var(--red)':portfolioPct>25?'#f59e0b':'var(--grn)'}}>{portfolioPct.toFixed(1)}%</span></div>
+                        <div className={styles.sumRow}><span>{t('kelly_optimal')}</span><span style={{color:'var(--txt3)'}}>{kelly.toFixed(0)}%</span></div>
                       </div>
                     )
                   })()}
@@ -400,21 +463,21 @@ export function FuturesWidget({ onOpenWallet }) {
                     ⚠️ Marge = <b>${fmt(confirmBig.margin,2)}</b> ({confirmBig.pct}% de ton solde)
                   </div>
                   <div style={{display:'flex',gap:6}}>
-                    <button className={styles.ctaBtn+' '+styles.ctaShort} style={{flex:1,padding:8}} onClick={()=>setConfirmBig(null)}>Annuler</button>
-                    <button className={styles.ctaBtn+' '+(side==='long'?styles.ctaLong:styles.ctaShort)} style={{flex:1,padding:8}} onClick={()=>{setConfirmBig(null);handleTrade()}}>Confirmer</button>
+                    <button className={styles.ctaBtn+' '+styles.ctaShort} style={{flex:1,padding:8}} onClick={()=>setConfirmBig(null)}>{t('cancel')}</button>
+                    <button className={styles.ctaBtn+' '+(side==='long'?styles.ctaLong:styles.ctaShort)} style={{flex:1,padding:8}} onClick={()=>{setConfirmBig(null);handleTrade()}}>{t('confirm')}</button>
                   </div>
                 </div>
               )}
               <button className={styles.ctaBtn+' '+(side==='long'?styles.ctaLong:styles.ctaShort)} onClick={handleTrade} disabled={submitting}>
-                {submitting?'⟳ Envoi...' : side==='long'?`↑ Long ${base} ×${leverage}`:`↓ Short ${base} ×${leverage}`}
+                {submitting?`⟳ ${t('sending')}` : side==='long'?`↑ Long ${base} ×${leverage}`:`↓ Short ${base} ×${leverage}`}
               </button>
             </div>
           )}
 
           {tab==='positions' && (
             <div className={styles.positions}>
-              {loading&&<div className={styles.posMsg}>Chargement...</div>}
-              {!loading&&positions.length===0&&<div className={styles.posMsg}><div style={{fontSize:28}}>📭</div><div>Aucune position</div><button className={styles.backBtn} onClick={()=>setTab('trade')}>← Ouvrir une position</button></div>}
+              {loading&&<div className={styles.posMsg}>{t('loading')}</div>}
+              {!loading&&positions.length===0&&<div className={styles.posMsg}><div style={{fontSize:28}}>📭</div><div>{t('no_positions')}</div><button className={styles.backBtn} onClick={()=>setTab('trade')}>← {t('open_position')}</button></div>}
               {positions.map((p,i)=>{
                 const rawSide = (p.side||'').toUpperCase()
                 const isLong = rawSide==='LONG' || rawSide==='BUY'
@@ -486,18 +549,18 @@ export function FuturesWidget({ onOpenWallet }) {
 
               {!loading&&positions.length>0&&(
                 <div style={{display:'flex',gap:6,marginTop:4}}>
-                  <button className={styles.refreshBtn} onClick={loadData}>↻ Actualiser</button>
+                  <button className={styles.refreshBtn} onClick={loadData}>↻ {t('refresh')}</button>
                   <button className={styles.closeBtn} style={{flex:1}} onClick={closeAllPositions}>✕ Fermer tout (Q)</button>
                 </div>
               )}
-              {!loading&&positions.length===0&&<button className={styles.refreshBtn} onClick={loadData}>↻ Actualiser</button>}
+              {!loading&&positions.length===0&&<button className={styles.refreshBtn} onClick={loadData}>↻ {t('refresh')}</button>}
             </div>
           )}
 
           {tab==='orders' && (
             <div className={styles.positions}>
-              {loading&&<div className={styles.posMsg}>Chargement...</div>}
-              {!loading&&orders.length===0&&<div className={styles.posMsg}><div style={{fontSize:28}}>📋</div><div>Aucun ordre en cours</div></div>}
+              {loading&&<div className={styles.posMsg}>{t('loading')}</div>}
+              {!loading&&orders.length===0&&<div className={styles.posMsg}><div style={{fontSize:28}}>📋</div><div>{t('no_orders')}</div></div>}
               {orders.map((o,i)=>(
                 <div key={i} className={styles.posRow} style={{flexDirection:'column',gap:4}}>
                   <div className={styles.posTop}>
@@ -508,14 +571,14 @@ export function FuturesWidget({ onOpenWallet }) {
                   <div className={styles.posDetail}><span>Qty: {o.qty}</span><span>Prix: {o.price||'Market'}</span><span>{o.status||''}</span></div>
                 </div>
               ))}
-              {!loading&&<button className={styles.refreshBtn} onClick={loadData}>↻ Actualiser</button>}
+              {!loading&&<button className={styles.refreshBtn} onClick={loadData}>↻ {t('refresh')}</button>}
             </div>
           )}
 
           {tab==='history' && (
             <div className={styles.positions}>
-              {loading&&<div className={styles.posMsg}>Chargement...</div>}
-              {!loading&&history.length===0&&<div className={styles.posMsg}><div style={{fontSize:28}}>📜</div><div>Aucun trade récent</div></div>}
+              {loading&&<div className={styles.posMsg}>{t('loading')}</div>}
+              {!loading&&history.length===0&&<div className={styles.posMsg}><div style={{fontSize:28}}>📜</div><div>{t('no_trades')}</div></div>}
               {history.map((t,i)=>{
                 const pnl = parseFloat(t.profit||t.realizedPNL||0)
                 const isBuy = (t.side||'').toUpperCase()==='BUY'
@@ -535,7 +598,7 @@ export function FuturesWidget({ onOpenWallet }) {
                   {(t.ctime||t.mtime) && <div style={{fontSize:9,color:'var(--txt3)'}}>{new Date(t.ctime||t.mtime).toLocaleString()}</div>}
                 </div>
               )})}
-              {!loading&&<button className={styles.refreshBtn} onClick={loadData}>↻ Actualiser</button>}
+              {!loading&&<button className={styles.refreshBtn} onClick={loadData}>↻ {t('refresh')}</button>}
             </div>
           )}
         </>

@@ -1,13 +1,59 @@
 // FXSEDGE Bitunix API — signature double SHA256 conforme à la doc officielle
+import { encrypt, decrypt } from './secureStorage'
+
 const PROXY = "/api/proxy"
 const FUTURES = "https://fapi.bitunix.com"
 const SPOT    = "https://openapi.bitunix.com"
 const KEY = "fxs_bx_v3"
 
-export const saveApiKeys  = (k,s) => localStorage.setItem(KEY, btoa(JSON.stringify({k,s})))
-export const clearApiKeys = ()    => localStorage.removeItem(KEY)
-export const loadApiKeys  = ()    => { try{const{k,s}=JSON.parse(atob(localStorage.getItem(KEY)||""));return k&&s?{k,s}:null}catch{return null} }
-export const hasApiKeys   = ()    => !!loadApiKeys()
+// In-memory cache (cleared on page reload)
+let _cachedKeys = null
+let _cacheLoaded = false
+
+// Save encrypted, then update cache
+export async function saveApiKeys(k, s) {
+  const encrypted = await encrypt(JSON.stringify({ k, s }))
+  localStorage.setItem(KEY, encrypted)
+  _cachedKeys = { k, s }
+  _cacheLoaded = true
+}
+
+export const clearApiKeys = () => {
+  localStorage.removeItem(KEY)
+  _cachedKeys = null
+  _cacheLoaded = true
+}
+
+// Async load — handles encrypted + legacy btoa format
+export async function loadApiKeysAsync() {
+  if (_cacheLoaded) return _cachedKeys
+  const raw = localStorage.getItem(KEY) || ""
+  if (!raw) { _cacheLoaded = true; return null }
+  try {
+    const decrypted = await decrypt(raw)
+    if (!decrypted) { _cacheLoaded = true; return null }
+    const { k, s } = JSON.parse(decrypted)
+    if (k && s) {
+      _cachedKeys = { k, s }
+      // If legacy format, re-save encrypted
+      if (raw === btoa(JSON.stringify({ k, s }))) {
+        const newEnc = await encrypt(JSON.stringify({ k, s }))
+        localStorage.setItem(KEY, newEnc)
+      }
+      _cacheLoaded = true
+      return _cachedKeys
+    }
+  } catch {}
+  _cacheLoaded = true
+  return null
+}
+
+// Sync load (uses cache) — load asynchronously on first call, returns null if not yet loaded
+export const loadApiKeys = () => _cachedKeys
+export const hasApiKeys  = () => !!_cachedKeys || !!localStorage.getItem(KEY)
+
+// Pre-load cache at module init
+loadApiKeysAsync().catch(() => {})
 
 // SHA256 hex
 async function sha256(str) {
@@ -39,7 +85,9 @@ function validateNumStr(s) {
 }
 
 async function call(market, path, method="GET", body=null, qp={}) {
-  const keys = loadApiKeys()
+  // Ensure keys are loaded from encrypted storage
+  let keys = loadApiKeys()
+  if (!keys) keys = await loadApiKeysAsync()
   if (!keys) throw new Error("Clés API non configurées")
   const { k: apiKey, s: secretKey } = keys
 

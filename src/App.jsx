@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { useAccount } from 'wagmi'
 import { useStore } from './store'
 import { hasApiKeys } from './lib/bitunix'
@@ -12,10 +12,11 @@ import { LiquidityHeatmap } from './components/LiquidityHeatmap/LiquidityHeatmap
 import { SwapWidget } from './components/SwapWidget/SwapWidget'
 import { Spot } from './components/Spot/Spot'
 import { FuturesWidget } from './components/FuturesWidget/FuturesWidget'
-import { MultiChart } from './components/MultiChart/MultiChart'
-import { OrdersPanel } from './components/OrdersPanel/OrdersPanel'
-import { PortfolioHub } from './components/PortfolioHub/PortfolioHub'
-import { WalletPage } from './components/WalletPage/WalletPage'
+// Lazy: chargés à la demande quand l'utilisateur navigue vers ces vues
+const MultiChart       = lazy(() => import('./components/MultiChart/MultiChart').then(m => ({ default: m.MultiChart })))
+const OrdersPanel      = lazy(() => import('./components/OrdersPanel/OrdersPanel').then(m => ({ default: m.OrdersPanel })))
+const PortfolioHub     = lazy(() => import('./components/PortfolioHub/PortfolioHub').then(m => ({ default: m.PortfolioHub })))
+const WalletPage       = lazy(() => import('./components/WalletPage/WalletPage').then(m => ({ default: m.WalletPage })))
 import { WalletModal } from './components/WalletModal/WalletModal'
 import { DepositModal } from './components/DepositModal/DepositModal'
 import { WithdrawModal } from './components/WithdrawModal/WithdrawModal'
@@ -28,16 +29,16 @@ import { OptionsFlow } from './components/OptionsFlow/OptionsFlow'
 // New intel components are imported via MarketIntel
 import { HarmonicScanner } from './components/HarmonicScanner/HarmonicScanner'
 import { NewsTracker } from './components/NewsTracker/NewsTracker'
-import { LiquidationMap } from './components/LiquidationMap/LiquidationMap'
-import { MarketIntel } from './components/MarketIntel/MarketIntel'
+const LiquidationMap   = lazy(() => import('./components/LiquidationMap/LiquidationMap').then(m => ({ default: m.LiquidationMap })))
+const MarketIntel      = lazy(() => import('./components/MarketIntel/MarketIntel').then(m => ({ default: m.MarketIntel })))
 import { PatternScanner } from './components/PatternScanner/PatternScanner'
 import { MarketOverview } from './components/MarketOverview/MarketOverview'
 import { SmartMoney } from './components/SmartMoney/SmartMoney'
-import { Manifesto } from './components/Manifesto/Manifesto'
-import { CopyTrading } from './components/CopyTrading/CopyTrading'
-import { TradeJournal } from './components/TradeJournal/TradeJournal'
+const Manifesto        = lazy(() => import('./components/Manifesto/Manifesto').then(m => ({ default: m.Manifesto })))
+const CopyTrading      = lazy(() => import('./components/CopyTrading/CopyTrading').then(m => ({ default: m.CopyTrading })))
+const TradeJournal     = lazy(() => import('./components/TradeJournal/TradeJournal').then(m => ({ default: m.TradeJournal })))
 import { MarketScanner } from './components/MarketScanner/MarketScanner'
-import { PositionSizer } from './components/PositionSizer/PositionSizer'
+const PositionSizer    = lazy(() => import('./components/PositionSizer/PositionSizer').then(m => ({ default: m.PositionSizer })))
 import { useUrlSync } from './hooks/useUrlSync'
 import { useOnChainBalance } from './hooks/useBalance'
 import styles from './App.module.css'
@@ -73,7 +74,18 @@ export default function App() {
   const lastPx  = useStore(s => s.lastPx)
   const comparatorPrices = useStore(s => s.comparatorPrices) || {}
   const { isConnected } = useAccount()
-  const keyed = hasApiKeys()
+  const [keyed, setKeyed] = useState(hasApiKeys())
+
+  // Reactive keyed state — updates after async load + on key changes
+  useEffect(() => {
+    let cancelled = false
+    import('./lib/bitunix').then(({ loadApiKeysAsync }) =>
+      loadApiKeysAsync().catch(() => null)
+    ).then(() => { if (!cancelled) setKeyed(hasApiKeys()) })
+    const h = () => setKeyed(hasApiKeys())
+    window.addEventListener('fxs:keysUpdated', h)
+    return () => { cancelled = true; window.removeEventListener('fxs:keysUpdated', h) }
+  }, [])
 
   const [walletOpen,   setWalletOpen]   = useState(false)
   const [depositOpen,  setDepositOpen]  = useState(false)
@@ -253,7 +265,12 @@ export default function App() {
       <MarketOverview />
       <Comparator />
 
-      {/* ── FULL PAGE VIEWS ── */}
+      {/* ── FULL PAGE VIEWS (lazy-loaded) ── */}
+      <Suspense fallback={<div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',color:'var(--txt3)',fontSize:11,gap:8}}>
+        <div style={{width:14,height:14,border:'2px solid var(--brd)',borderTopColor:'var(--grn)',borderRadius:'50%',animation:'fxsSpin 0.8s linear infinite'}}/>
+        <span>Chargement...</span>
+        <style>{`@keyframes fxsSpin{to{transform:rotate(360deg)}}`}</style>
+      </div>}>
       {view === 'multi'     && <MultiChart />}
       {view === 'wallet' && (
         <div className={styles.tradePanel}><PortfolioHub onOpenWallet={openWallet}/></div>
@@ -265,6 +282,7 @@ export default function App() {
       {view === 'journal'   && <TradeJournal />}
       {view === 'intel'     && <MarketIntel />}
       {view === 'liqmap'    && <LiquidationMap />}
+      </Suspense>
       {view === 'scanner'   && <MarketScanner />}
       {view === 'patterns'  && <div style={{flex:1,minHeight:0,overflow:'hidden',display:'flex',flexDirection:'column'}}><PatternScanner /></div>}
       {view === 'delta'     && <div style={{flex:1,minHeight:0,overflow:'hidden',display:'flex',flexDirection:'column'}}><DeltaFlow /></div>}
@@ -328,7 +346,7 @@ export default function App() {
               <div className={styles.chartArea}>
                 <Chart onToggleOrders={() => setOrdersOpen(o=>!o)} ordersOpen={ordersOpen} />
               </div>
-              {!isMobile && ordersOpen && <div className={styles.ordersArea}><OrdersPanel /></div>}
+              {!isMobile && ordersOpen && <div className={styles.ordersArea}><Suspense fallback={null}><OrdersPanel /></Suspense></div>}
             </div>
 
             {/* RIGHT — order form (desktop only) */}

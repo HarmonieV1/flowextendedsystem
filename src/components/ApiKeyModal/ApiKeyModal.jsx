@@ -28,7 +28,7 @@ export function ApiKeyModal({ onClose, onSuccess, defaultExchange = 'bitunix' })
     setError(null)
 
     if (isBitget) {
-      saveBitgetKeys(apiKey.trim(), secretKey.trim(), passphrase.trim())
+      await saveBitgetKeys(apiKey.trim(), secretKey.trim(), passphrase.trim())
       try {
         await bitgetFuturesBalance()
         setStep('success')
@@ -47,7 +47,7 @@ export function ApiKeyModal({ onClose, onSuccess, defaultExchange = 'bitunix' })
           setError(msg || 'Connexion échouée')
       }
     } else {
-      saveApiKeys(apiKey.trim(), secretKey.trim())
+      await saveApiKeys(apiKey.trim(), secretKey.trim())
       const result = await testApiKeys()
       if (result.ok) {
         setStep('success')

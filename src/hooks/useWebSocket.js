@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
+import { logSilent } from '../lib/errorMonitor'
 
 const RECONNECT_DELAY = 3000
 const BINANCE_WS = 'wss://stream.binance.com:9443/ws/'
@@ -15,7 +16,7 @@ export function useWebSocket(streamPath, onMessage, enabled = true) {
     wsRef.current = ws
 
     ws.onmessage = (e) => {
-      try { onMessage(JSON.parse(e.data)) } catch (_) {}
+      try { onMessage(JSON.parse(e.data)) } catch(e){logSilent(e,'useWebSocket')}
     }
 
     ws.onclose = () => {
@@ -24,7 +25,7 @@ export function useWebSocket(streamPath, onMessage, enabled = true) {
     }
 
     ws.onerror = () => {
-      try { ws.close() } catch (_) {}
+      try { ws.close() } catch(e){logSilent(e,'useWebSocket')}
     }
   }, [streamPath, onMessage, enabled])
 
@@ -36,7 +37,7 @@ export function useWebSocket(streamPath, onMessage, enabled = true) {
       clearTimeout(timerRef.current)
       if (wsRef.current) {
         wsRef.current.onclose = null
-        try { wsRef.current.close() } catch (_) {}
+        try { wsRef.current.close() } catch(e){logSilent(e,'useWebSocket')}
       }
     }
   }, [connect])
@@ -52,11 +53,11 @@ export function useExternalWS(url, onOpen, onMessage) {
     wsRef.current = ws
     ws.onopen = () => onOpen(ws)
     ws.onmessage = (e) => {
-      try { onMessage(JSON.parse(e.data)) } catch (_) {}
+      try { onMessage(JSON.parse(e.data)) } catch(e){logSilent(e,'useWebSocket')}
     }
     return () => {
       ws.onclose = null
-      try { ws.close() } catch (_) {}
+      try { ws.close() } catch(e){logSilent(e,'useWebSocket')}
     }
   }, [url])
 }

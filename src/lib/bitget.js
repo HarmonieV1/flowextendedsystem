@@ -1,15 +1,56 @@
 // FXSEDGE — Bitget API V2 connector
 import CryptoJS from 'crypto-js'
+import { encrypt, decrypt } from './secureStorage'
 
 const PROXY = '/api/proxy-bitget'
 const BITGET_API = 'https://api.bitget.com'
 
-// ── Keys ──
+// ── Keys (encrypted) ──
 const BG_KEY = 'fxs_bitget_keys'
-export const saveBitgetKeys = (k, s, p) => localStorage.setItem(BG_KEY, btoa(JSON.stringify({k,s,p})))
-export const loadBitgetKeys = () => { try { const d = JSON.parse(atob(localStorage.getItem(BG_KEY)||'')); return d?.k && d?.s && d?.p ? d : null } catch { return null } }
-export const hasBitgetKeys = () => !!loadBitgetKeys()
-export const clearBitgetKeys = () => localStorage.removeItem(BG_KEY)
+
+let _cachedBgKeys = null
+let _bgLoaded = false
+
+export async function saveBitgetKeys(k, s, p) {
+  const encrypted = await encrypt(JSON.stringify({ k, s, p }))
+  localStorage.setItem(BG_KEY, encrypted)
+  _cachedBgKeys = { k, s, p }
+  _bgLoaded = true
+}
+
+export async function loadBitgetKeysAsync() {
+  if (_bgLoaded) return _cachedBgKeys
+  const raw = localStorage.getItem(BG_KEY) || ""
+  if (!raw) { _bgLoaded = true; return null }
+  try {
+    const decrypted = await decrypt(raw)
+    if (!decrypted) { _bgLoaded = true; return null }
+    const d = JSON.parse(decrypted)
+    if (d?.k && d?.s && d?.p) {
+      _cachedBgKeys = d
+      // Re-save encrypted if legacy format
+      if (raw === btoa(JSON.stringify(d))) {
+        const newEnc = await encrypt(JSON.stringify(d))
+        localStorage.setItem(BG_KEY, newEnc)
+      }
+      _bgLoaded = true
+      return _cachedBgKeys
+    }
+  } catch {}
+  _bgLoaded = true
+  return null
+}
+
+export const loadBitgetKeys = () => _cachedBgKeys
+export const hasBitgetKeys  = () => !!_cachedBgKeys || !!localStorage.getItem(BG_KEY)
+export const clearBitgetKeys = () => {
+  localStorage.removeItem(BG_KEY)
+  _cachedBgKeys = null
+  _bgLoaded = true
+}
+
+// Pre-load cache at module init
+loadBitgetKeysAsync().catch(() => {})
 
 // ── Signature ──
 function sign(timestamp, method, path, body = '') {
@@ -21,7 +62,8 @@ function sign(timestamp, method, path, body = '') {
 
 // ── API Call ──
 async function call(path, method = 'GET', body = null) {
-  const keys = loadBitgetKeys()
+  let keys = loadBitgetKeys()
+  if (!keys) keys = await loadBitgetKeysAsync()
   if (!keys) throw new Error('Connect Bitget API first')
   
   const timestamp = Date.now().toString()
@@ -92,4 +134,25 @@ export const bitgetSpotOrder = ({ symbol, side, qty, price, orderType = 'market'
     price: price ? String(price) : undefined,
     force: 'gtc',
   })
+}
+
+// ── Orders ──
+export const bitgetGetOrders = (symbol) => {
+  const params = new URLSearchParams({ productType: 'USDT-FUTURES' })
+  if (symbol) params.set('symbol', symbol + '_UMCBL')
+  return call('/api/v2/mix/order/orders-pending?' + params.toString())
+}
+
+// ── Trade history ──
+export const bitgetGetHistory = (symbol) => {
+  const endTime = Date.now()
+  const startTime = endTime - 7 * 24 * 60 * 60 * 1000 // 7 jours
+  const params = new URLSearchParams({
+    productType: 'USDT-FUTURES',
+    startTime: String(startTime),
+    endTime: String(endTime),
+    pageSize: '30',
+  })
+  if (symbol) params.set('symbol', symbol + '_UMCBL')
+  return call('/api/v2/mix/order/fills-history?' + params.toString())
 }

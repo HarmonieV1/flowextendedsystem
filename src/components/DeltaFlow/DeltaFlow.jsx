@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../../store'
 import { fmt, fmtPx } from '../../lib/format'
 import styles from './DeltaFlow.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 const MULTI_PAIRS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT']
 const MAX_PTS = 60
@@ -25,7 +26,7 @@ export function DeltaFlow() {
 
   useEffect(() => {
     setTicks([]); buyRef.current=0; sellRef.current=0; ticksRef.current=[]; setLive(false)
-    if (wsRef.current) { try{wsRef.current.close()}catch(_){} }
+    if (wsRef.current) { try{wsRef.current.close()}catch(e){logSilent(e,'DeltaFlow')} }
     if (mode !== 'single') return
 
     const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair.toLowerCase()}@aggTrade`)
@@ -62,9 +63,9 @@ export function DeltaFlow() {
         setTicks([...ticksRef.current])
         setDelta1m(calc(r1))
         setDelta5m(calc(r5))
-      } catch(_) {}
+      } catch(e){logSilent(e,'DeltaFlow')}
     }
-    return () => { try{ws.close()}catch(_){} }
+    return () => { try{ws.close()}catch(e){logSilent(e,'DeltaFlow')} }
   }, [pair, mode])
 
   // Multi-pair mode
@@ -86,9 +87,9 @@ export function DeltaFlow() {
           const curr = prev[sym] || { buy:0, sell:0 }
           return { ...prev, [sym]: { buy: curr.buy+(isBuy?usd:0), sell: curr.sell+(isBuy?0:usd) } }
         })
-      } catch(_) {}
+      } catch(e){logSilent(e,'DeltaFlow')}
     }
-    return () => { try{ws.close()}catch(_){} }
+    return () => { try{ws.close()}catch(e){logSilent(e,'DeltaFlow')} }
   }, [mode])
 
   const total1m = delta1m.buy + delta1m.sell || 1

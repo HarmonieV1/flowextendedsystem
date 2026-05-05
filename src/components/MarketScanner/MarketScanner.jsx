@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../../store'
 import { fmtPx } from '../../lib/format'
 import styles from './MarketScanner.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 const PAIRS = [
   'BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT',
@@ -69,7 +70,7 @@ export function MarketScanner() {
         })
         setData(prev => ({...prev, ...update}))
         setLoaded(prev => prev + Object.keys(update).length)
-      } catch(_) {}
+      } catch(e){logSilent(e,'MarketScanner')}
     }
     loadRest()
   }, [])
@@ -109,13 +110,13 @@ export function MarketScanner() {
             })
             return next
           })
-        } catch(_) {}
+        } catch(e){logSilent(e,'MarketScanner')}
       }
       ws.onerror = () => {}
       ws.onclose = () => { if(!dead) retryT=setTimeout(connect,2000) }
     }
     connect()
-    return () => { dead=true; clearTimeout(retryT); if(ws){ws.onclose=null;try{ws.close()}catch(_){}} }
+    return () => { dead=true; clearTimeout(retryT); if(ws){ws.onclose=null;try{ws.close()}catch(e){logSilent(e,'MarketScanner')}} }
   }, [])
 
   const handlePair = (pair) => {

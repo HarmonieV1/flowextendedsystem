@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useStore } from '../../store'
 import { fmtPx } from '../../lib/format'
 import styles from './Comparator.module.css'
+import { logSilent } from '../../lib/errorMonitor'
 
 // Sources confirmées CORS OK
 const SOURCES = [
@@ -48,12 +49,12 @@ export function Comparator() {
     const connect = () => {
       if (dead) return
       ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair.toLowerCase()}@bookTicker`)
-      ws.onmessage = e => { try{const d=JSON.parse(e.data);set('binance',d.b,d.a)}catch(_){} }
+      ws.onmessage = e => { try{const d=JSON.parse(e.data);set('binance',d.b,d.a)}catch(e){logSilent(e,'Comparator')} }
       ws.onerror = () => {}
       ws.onclose = () => { if(!dead) retryT=setTimeout(connect,3000) }
     }
     connect()
-    return () => { dead=true;clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(_){}} }
+    return () => { dead=true;clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(e){logSilent(e,'Comparator')}} }
   }, [pair])
 
   // ── Bybit REST ──
@@ -67,7 +68,7 @@ export function Comparator() {
         const d = await r.json()
         const t = d?.result?.list?.[0]
         if (t?.bid1Price) set('bybit',t.bid1Price,t.ask1Price)
-      } catch(_){}
+      } catch(e){logSilent(e,'Comparator')}
       if (!dead) setTimeout(poll,4000)
     }
     poll(); return()=>{dead=true}
@@ -81,12 +82,12 @@ export function Comparator() {
       if (dead) return
       ws = new WebSocket('wss://ws.okx.com:8443/ws/v5/public')
       ws.onopen = () => ws.send(JSON.stringify({op:'subscribe',args:[{channel:'tickers',instId:pair.replace('USDT','-USDT')}]}))
-      ws.onmessage = e => { try{const d=JSON.parse(e.data);if(d.data?.[0]?.bidPx)set('okx',d.data[0].bidPx,d.data[0].askPx)}catch(_){} }
+      ws.onmessage = e => { try{const d=JSON.parse(e.data);if(d.data?.[0]?.bidPx)set('okx',d.data[0].bidPx,d.data[0].askPx)}catch(e){logSilent(e,'Comparator')} }
       ws.onerror = () => {}
       ws.onclose = () => { if(!dead) retryT=setTimeout(connect,3000) }
     }
     connect()
-    return()=>{dead=true;clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(_){}}}
+    return()=>{dead=true;clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(e){logSilent(e,'Comparator')}}}
   }, [pair])
 
   // ── Bitget WS ──
@@ -97,12 +98,12 @@ export function Comparator() {
       if (dead) return
       ws = new WebSocket('wss://ws.bitget.com/v2/ws/public')
       ws.onopen = () => ws.send(JSON.stringify({op:'subscribe',args:[{instType:'SPOT',channel:'ticker',instId:pair}]}))
-      ws.onmessage = e => { try{const d=JSON.parse(e.data);const t=d.data?.[0];if(t?.bidPr)set('bitget',t.bidPr,t.askPr)}catch(_){} }
+      ws.onmessage = e => { try{const d=JSON.parse(e.data);const t=d.data?.[0];if(t?.bidPr)set('bitget',t.bidPr,t.askPr)}catch(e){logSilent(e,'Comparator')} }
       ws.onerror = () => {}
       ws.onclose = () => { if(!dead) retryT=setTimeout(connect,3000) }
     }
     connect()
-    return()=>{dead=true;clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(_){}}}
+    return()=>{dead=true;clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(e){logSilent(e,'Comparator')}}}
   }, [pair])
 
   // ── Gate.io WS ──
@@ -122,14 +123,14 @@ export function Comparator() {
             if (d.result?.b && d.result?.a) set('gate', d.result.b, d.result.a)
             // Update events
             if (d.event==='update' && d.result?.b && d.result?.a) set('gate', d.result.b, d.result.a)
-          } catch(_) {}
+          } catch(e){logSilent(e,'Comparator')}
         }
         ws.onerror = () => {}
         ws.onclose = () => { if(!dead) retryT=setTimeout(connect,5000) }
       } catch(_) { if(!dead) retryT=setTimeout(connect,5000) }
     }
     connect()
-    return()=>{dead=true;clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(_){}}}
+    return()=>{dead=true;clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(e){logSilent(e,'Comparator')}}}
   }, [pair])
 
   // ── HTX (Huobi) WS ──
@@ -166,14 +167,14 @@ export function Comparator() {
             const d = JSON.parse(txt)
             if (d.ping) { ws.send(JSON.stringify({pong:d.ping})); return }
             if (d.tick?.bid && d.tick?.ask) set('htx', d.tick.bid, d.tick.ask)
-          } catch(_) {}
+          } catch(e){logSilent(e,'Comparator')}
         }
         ws.onerror = () => {}
         ws.onclose = () => { clearInterval(pingT); if(!dead) retryT=setTimeout(connect,5000) }
       } catch(_) { if(!dead) retryT=setTimeout(connect,5000) }
     }
     connect()
-    return()=>{dead=true;clearTimeout(retryT);clearInterval(pingT);if(ws){ws.onclose=null;try{ws.close()}catch(_){}}}
+    return()=>{dead=true;clearTimeout(retryT);clearInterval(pingT);if(ws){ws.onclose=null;try{ws.close()}catch(e){logSilent(e,'Comparator')}}}
   }, [pair])
 
   // ── Fear & Greed ──
@@ -184,7 +185,7 @@ export function Comparator() {
         const d = await r.json()
         const item = d?.data?.[0]
         if (item?.value) setFg({value:parseInt(item.value),label:item.value_classification})
-      } catch(_){}
+      } catch(e){logSilent(e,'Comparator')}
     }
     load(); const t=setInterval(load,5*60*1000); return()=>clearInterval(t)
   }, [])
