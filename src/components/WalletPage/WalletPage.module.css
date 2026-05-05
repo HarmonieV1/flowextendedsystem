@@ -1,0 +1,38 @@
+.wrap { display:flex; flex-direction:column; height:100%; overflow:hidden; background:var(--bg0); }
+
+.empty { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; gap:12px; padding:40px; text-align:center; }
+.emptyIcon  { font-size:56px; opacity:.3; }
+.emptyTitle { font-size:20px; font-weight:800; color:var(--txt); }
+.emptySub   { font-size:13px; color:var(--txt3); line-height:1.5; }
+
+.header { padding:16px; border-bottom:1px solid var(--brd); background:var(--bg1); flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.addressRow { display:flex; align-items:center; gap:10px; }
+.avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; flex-shrink:0; }
+.address { font-family:var(--mono); font-size:14px; font-weight:700; color:var(--txt); }
+.chainBadge { font-size:11px; font-weight:600; margin-top:2px; }
+.actions { display:flex; gap:8px; flex-shrink:0; }
+.actBtn { padding:8px 14px; background:var(--bg3); border:1px solid var(--brd2); border-radius:6px; color:var(--txt2); font-family:var(--mono); font-size:11px; cursor:pointer; transition:all .12s; white-space:nowrap; }
+.actBtn:hover { border-color:var(--grn); color:var(--grn); }
+
+.tabs { display:flex; border-bottom:1px solid var(--brd); flex-shrink:0; background:var(--bg1); }
+.tabBtn { flex:1; padding:10px; border:none; background:transparent; color:var(--txt3); font-size:12px; font-weight:600; cursor:pointer; position:relative; transition:color .15s; }
+.tabOn { color:var(--txt); }
+.tabOn::after { content:''; position:absolute; bottom:0; left:10%; right:10%; height:2px; background:var(--grn); border-radius:2px; }
+
+.list { flex:1; overflow-y:auto; }
+.tokenRow { display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--brd); transition:background .1s; }
+.tokenRow:hover { background:var(--bg2); }
+.tokenIcon { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:800; flex-shrink:0; }
+.tokenInfo { flex:1; min-width:0; }
+.tokenSym  { display:block; font-size:14px; font-weight:700; color:var(--txt); }
+.tokenName { display:block; font-size:11px; color:var(--txt3); margin-top:1px; }
+.tokenBal  { text-align:right; }
+.tokenAmt  { display:block; font-size:14px; font-weight:700; color:var(--txt); font-family:var(--mono); }
+.tokenUsd  { display:block; font-size:11px; color:var(--txt3); margin-top:1px; }
+
+.defiWrap { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px; text-align:center; gap:12px; }
+.defiTitle { font-size:16px; font-weight:800; color:var(--txt); }
+.defiSub   { font-size:12px; color:var(--txt3); line-height:1.6; }
+.gmxLink   { padding:12px 24px; background:rgba(140,198,63,.1); border:1px solid rgba(140,198,63,.25); border-radius:8px; color:var(--grn); text-decoration:none; font-weight:700; font-size:13px; margin-top:8px; }
+
+.footer { padding:10px 16px; font-size:10px; color:var(--txt3); border-top:1px solid var(--brd); text-align:center; flex-shrink:0; }

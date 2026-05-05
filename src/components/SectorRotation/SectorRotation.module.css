@@ -1,0 +1,30 @@
+.wrap { display:flex;flex-direction:column;height:100%;overflow:hidden;background:var(--bg0); }
+.header { display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--brd);background:var(--bg1);flex-shrink:0; }
+.title { font-size:13px;font-weight:800;color:var(--txt); }
+.sub { font-size:10px;color:var(--txt3);margin-left:auto; }
+.loading { padding:40px;text-align:center;color:var(--txt3);font-size:12px; }
+.list { flex:1;overflow-y:auto; }
+.sector { border-bottom:1px solid var(--brd); }
+.sectorHead { display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;transition:background .1s; }
+.sectorHead:hover { background:rgba(255,255,255,.02); }
+.sectorName { font-size:12px;font-weight:700;color:var(--txt);width:70px; }
+.sectorCount { font-size:9px;color:var(--txt3);width:55px; }
+.sectorBar { flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden; }
+.sectorFill { height:100%;border-radius:3px;transition:width .3s; }
+.sectorChg { font-size:12px;font-weight:800;font-family:var(--mono);width:65px;text-align:right; }
+.sectorVol { font-size:9px;color:var(--txt3);font-family:var(--mono);width:60px;text-align:right; }
+.expand { font-size:10px;color:var(--txt3);width:16px;text-align:center; }
+.tokens { padding:0 14px 8px;display:flex;flex-wrap:wrap;gap:4px; }
+.token { display:flex;align-items:center;gap:6px;padding:4px 8px;background:var(--bg2);border:1px solid var(--brd);border-radius:5px;cursor:pointer;transition:.1s; }
+.token:hover { border-color:var(--grn); }
+.tokenName { font-size:10px;font-weight:700;color:var(--txt); }
+.tokenChg { font-size:9px;font-weight:700;font-family:var(--mono); }
+.tokenVol { font-size:8px;color:var(--txt3);font-family:var(--mono); }
+.footer { padding:6px 14px;font-size:9px;color:var(--txt3);text-align:center;border-top:1px solid var(--brd);flex-shrink:0; }
+
+@media (max-width:768px) {
+  .sectorHead { padding:8px 10px;gap:4px; }
+  .sectorName { font-size:11px;width:55px; }
+  .sectorCount { display:none; }
+  .sectorVol { display:none; }
+}

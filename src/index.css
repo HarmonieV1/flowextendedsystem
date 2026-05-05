@@ -1,0 +1,79 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@700;800&display=swap');
+
+:root {
+  --bg0:#09090b;--bg1:#0f0f12;--bg2:#141418;--bg3:#1a1a20;--bg4:#202028;
+  --brd:rgba(255,255,255,0.06);--brd2:rgba(255,255,255,0.11);
+  --txt:#f4f4f5;--txt2:#71717a;--txt3:#3f3f46;
+  --grn:#8cc63f;--grn2:rgba(140,198,63,0.1);
+  --red:#ff3b5c;--red2:rgba(255,59,92,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg0);}#root{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);font-family:var(--mono);font-size:11.5px}
+button{cursor:pointer;font-family:var(--mono);background:transparent;border:none;color:inherit}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+
+input,button,select,textarea{pointer-events:auto;touch-action:manipulation;}
+
+@keyframes slideIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+/* Light theme */
+[data-theme="light"] {
+  --bg0:  #f8f8f8;
+  --bg1:  #ffffff;
+  --bg2:  #f0f0f2;
+  --bg3:  #e5e5ea;
+  --bg4:  #d1d1d6;
+  --txt:  #09090b;
+  --txt2: #3f3f46;
+  --txt3: #71717a;
+  --brd:  #e4e4e7;
+  --brd2: #a1a1aa;
+  --grn:  #00b87a;
+  --grn2: rgba(0,184,122,.1);
+  --red:  #e53e3e;
+  --red2: rgba(229,62,62,.1);
+}
+[data-theme="light"] .root { background:#f8f8f8; }
+
+/* ── Global smooth transitions ── */
+* { scroll-behavior: smooth; }
+.fade-enter { animation: globalFade .15s ease-out; }
+@keyframes globalFade { from { opacity:0; } to { opacity:1; } }
+
+/* Smooth scroll for all scrollable panels */
+[style*="overflow"] { -webkit-overflow-scrolling: touch; }
+
+/* ── V2 Polish — animations et transitions globales ── */
+button { transition: all .12s ease-out; }
+button:active { transform: scale(0.97); }
+
+/* Smooth tab switching */
+[class*="tab"] { transition: color .15s, border-color .15s, background .15s; }
+
+/* Intel content fade-in */
+[class*="wrap"] > [class*="content"],
+[class*="wrap"] > [class*="list"] {
+  animation: contentFade .2s ease-out;
+}
+@keyframes contentFade { from { opacity:0; } to { opacity:1; } }
+
+/* Mobile touch improvements */
+@media (max-width:768px) {
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  input, select, textarea {
+    font-size: 16px !important; /* Prevent iOS zoom on focus */
+  }
+  /* Faster scrolling */
+  [class*="list"], [class*="wrap"], [class*="content"] {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}

@@ -1,0 +1,22 @@
+.wrap { display:flex; flex-direction:column; height:100%; overflow:hidden; background:#09090b; }
+
+.bar { display:flex; align-items:center; gap:8px; padding:6px 12px; border-bottom:1px solid var(--brd); background:var(--bg1); flex-shrink:0; }
+.layouts, .tfs { display:flex; gap:4px; }
+.layBtn, .tfBtn { background:transparent; border:1px solid var(--brd); color:var(--txt3); padding:3px 8px; border-radius:4px; font-family:var(--mono); font-size:10px; cursor:pointer; }
+.layOn, .tfOn   { border-color:var(--grn); color:var(--grn); background:rgba(140,198,63,.08); }
+
+/* Tile */
+.tile { position:relative; display:flex; flex-direction:column; overflow:hidden; background:#09090b; border:1px solid var(--brd); }
+.tileBar { display:flex; align-items:center; padding:4px 8px; background:var(--bg1); border-bottom:1px solid var(--brd); flex-shrink:0; gap:6px; }
+.pairBtn { background:transparent; border:none; color:var(--txt); font-family:var(--mono); font-size:11px; font-weight:700; cursor:pointer; padding:2px 4px; }
+.pairBtn:hover { color:var(--grn); }
+
+/* iframe fills tile exactly — no grey bar */
+.tileChart { flex:1; min-height:0; position:relative; overflow:hidden; }
+.tileFrame { position:absolute; top:0; left:0; width:100%; height:100%; border:none; display:block; }
+
+/* Pair picker */
+.picker { position:absolute; top:30px; left:0; z-index:50; background:var(--bg2); border:1px solid var(--brd2); border-radius:8px; padding:8px; display:grid; grid-template-columns:repeat(3,1fr); gap:4px; min-width:180px; box-shadow:0 8px 32px rgba(0,0,0,.6); }
+.pickerItem { padding:6px 8px; background:transparent; border:1px solid var(--brd); border-radius:4px; color:var(--txt2); font-family:var(--mono); font-size:10px; cursor:pointer; text-align:center; }
+.pickerItem:hover { color:var(--txt); background:var(--bg3); }
+.pickerOn { border-color:var(--grn); color:var(--grn); background:rgba(140,198,63,.08); }

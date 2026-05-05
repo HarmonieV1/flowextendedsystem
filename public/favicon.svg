@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#09090b"/>
+  <rect x="24" y="24" width="464" height="464" rx="80" fill="none" stroke="#8cc63f" stroke-width="3" opacity=".15"/>
+  <rect x="100" y="320" width="40" height="80" rx="4" fill="#8cc63f" opacity=".2"/>
+  <rect x="160" y="280" width="40" height="120" rx="4" fill="#8cc63f" opacity=".3"/>
+  <rect x="220" y="220" width="40" height="180" rx="4" fill="#8cc63f" opacity=".4"/>
+  <rect x="280" y="180" width="40" height="220" rx="4" fill="#8cc63f" opacity=".6"/>
+  <rect x="340" y="140" width="40" height="260" rx="4" fill="#8cc63f" opacity=".8"/>
+  <line x1="120" y1="310" x2="360" y2="130" stroke="#8cc63f" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="360,130 340,145 355,150" fill="#8cc63f"/>
+  <text x="256" y="460" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="72" font-weight="900" fill="#e4e4e7" letter-spacing="-3">FXS</text>
+  <text x="256" y="490" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="28" font-weight="700" fill="#8cc63f" letter-spacing="8">EDGE</text>
+</svg>

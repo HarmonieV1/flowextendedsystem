@@ -1,0 +1,6 @@
+.wrap{display:flex;flex-direction:column;height:100%;overflow:hidden;background:var(--bg0)}
+.tabs{display:flex;border-bottom:2px solid var(--brd);flex-shrink:0;background:var(--bg1)}
+.btn{flex:1;padding:10px;border:none;background:transparent;color:var(--txt3);font-size:12px;font-weight:700;cursor:pointer;position:relative;transition:color .15s}
+.on{color:var(--txt)}
+.on::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--grn)}
+.content{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}

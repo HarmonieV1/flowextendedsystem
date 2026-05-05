@@ -1,0 +1,6 @@
+.wrap { display:flex;flex-direction:column;height:100%;overflow:hidden;background:var(--bg0); }
+.header { display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--brd);background:var(--bg1);flex-shrink:0; }
+.title { font-size:13px;font-weight:800;color:var(--txt); }
+.sub { font-size:10px;color:var(--txt3); }
+.widget { flex:1;min-height:0;overflow:hidden; }
+.widget iframe { width:100% !important;height:100% !important;border:none !important; }

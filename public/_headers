@@ -1,0 +1,10 @@
+/*
+  Cache-Control: no-cache, no-store, must-revalidate
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://s3.tradingview.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.binance.com wss://*.binance.com wss://stream.binance.com:* https://api.bybit.com wss://*.okx.com wss://ws.okx.com:* wss://*.bitget.com wss://*.gateio.ws wss://api.gateio.ws:* wss://*.huobi.pro wss://api.huobi.pro:* https://api.alternative.me https://apiv5.paraswap.io https://fapi.bitunix.com https://openapi.bitunix.com https://api.coingecko.com https://www.deribit.com https://open-api.coinglass.com https://api.gopluslabs.io https://*.supabase.co wss://*.supabase.co https://api.bitget.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.web3modal.org https://*.web3modal.com https://api.web3modal.org https://api.web3modal.com; frame-src https://s.tradingview.com https://*.tradingview.com; worker-src 'self' blob:
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

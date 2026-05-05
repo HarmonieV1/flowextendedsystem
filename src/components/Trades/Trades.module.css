@@ -1,0 +1,21 @@
+.wrap { display: flex; flex-direction: column; overflow: hidden; flex: 1; }
+.cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding: 4px 12px 2px;
+  flex-shrink: 0;
+}
+.cols span { font-size: 9px; color: var(--txt3); letter-spacing: 0.4px; text-transform: uppercase; }
+.cols span:not(:first-child) { text-align: right; }
+.list { overflow: hidden; flex: 1; }
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding: 2px 12px;
+  animation: fi 0.15s ease;
+}
+@keyframes fi { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+.price { font-size: 11px; font-weight: 600; }
+.buy .price { color: var(--grn); }
+.sell .price { color: var(--red); }
+.size, .time { font-size: 10px; color: var(--txt2); text-align: right; }

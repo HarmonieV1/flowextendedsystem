@@ -1,0 +1,24 @@
+{
+  "name": "FXSEDGE",
+  "short_name": "FXSEDGE",
+  "description": "No-KYC trading terminal — See every fee, question every spread",
+  "start_url": "/?utm_source=pwa",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#8cc63f",
+  "orientation": "any",
+  "scope": "/",
+  "prefer_related_applications": false,
+  "categories": ["finance", "utilities"],
+  "shortcuts": [
+    { "name": "Futures", "url": "/#BTC/15m", "description": "Trade BTC Futures" },
+    { "name": "Intel", "url": "/#intel", "description": "Market Intelligence" },
+    { "name": "Portfolio", "url": "/#portfolio", "description": "View Portfolio" }
+  ],
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "screenshots": []
+}
