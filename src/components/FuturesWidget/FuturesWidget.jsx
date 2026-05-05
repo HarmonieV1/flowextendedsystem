@@ -135,7 +135,7 @@ export function FuturesWidget({ onOpenWallet }) {
         const histArr = Array.isArray(hist) ? hist : hist?.tradeList || []
         setHistory(histArr)
       }
-    } catch(e) { console.error(e.message) }
+    } catch(e) { logSilent(e, 'FuturesWidget.loadData') }
     setLoad(false)
   }, [keyed, exchange])
 

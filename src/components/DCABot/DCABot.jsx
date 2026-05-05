@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../../store'
 import { hasApiKeys, spotPlaceOrder } from '../../lib/bitunix'
+import { logSilent } from '../../lib/errorMonitor'
 import { fmt, fmtPx } from '../../lib/format'
 import styles from './DCABot.module.css'
 
@@ -33,7 +34,7 @@ export function DCABot() {
         saveBots(updated)
         setBots(updated)
       } catch (e) {
-        console.error(`[DCA] ${bot.pair} error:`, e.message)
+        logSilent(e, `DCA.${bot.pair}`)
       }
     }
 

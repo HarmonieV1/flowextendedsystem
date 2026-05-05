@@ -52,7 +52,7 @@ export function Chart({ onToggleOrders, ordersOpen }) {
       setPositions(filtered)
       setOpenOrders(orderList)
       setTpslOrders(tpslList)
-    } catch(e) { console.error('[CHART] pos error:', e.message) }
+    } catch(e) { logSilent(e, 'Chart.pos') }
   }, [pair])
 
   useEffect(() => {
@@ -423,7 +423,7 @@ export function Chart({ onToggleOrders, ordersOpen }) {
         }
         setTimeout(loadPositions, 1000)
       } catch(err) {
-        console.error('[CHART] TPSL update failed:', err.message)
+        logSilent(err, 'Chart.TPSL')
         // Revert line
         try { drag.line.applyOptions({price: drag.startPrice, title: `${drag.type==='tp'?'✓ TP':'✕ SL'} ${fmtPx(drag.startPrice)}`}) } catch(e){logSilent(e,'Chart')}
       }

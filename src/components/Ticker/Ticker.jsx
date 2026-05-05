@@ -147,7 +147,7 @@ export function Ticker({ onOpenWallet, wsLive }) {
             onClick={toggleTheme}
             title={dark ? 'Light mode' : 'Dark mode'}
           >{dark ? '☀' : '🌙'}</button>
-          {wsLive && <span className={styles.wsPill}><span className={styles.wsDot}/>LIVE</span>}
+          {wsLive && <span className={styles.wsPill} title="Prix temps réel via Binance WebSocket — peut différer légèrement de Bitunix/Bitget"><span className={styles.wsDot}/>BINANCE</span>}
           <button className={styles.connectBtn} onClick={onOpenWallet}>
             {connected ? `${useStore.getState().address?.slice(0,6)}...` : 'Connect Wallet'}
           </button>

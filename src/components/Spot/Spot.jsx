@@ -139,7 +139,7 @@ export function Spot({ onOpenWallet }) {
       setAmount('')
       setTimeout(()=>{ setOk(''); loadBal() }, 3000)
     } catch(e) {
-      console.error('[SPOT] Erreur complète:', e)
+      logSilent(e, 'Spot.handleTrade')
       const msg = e.message || 'Erreur inconnue'
       // Show more detail for common Bitunix errors
       if (msg.includes('10007') || msg.includes('balance')) setErr('Solde insuffisant')
