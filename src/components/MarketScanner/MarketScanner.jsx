@@ -88,13 +88,19 @@ export function MarketScanner() {
           const update = {}
           arr.forEach(t => {
             if (PAIRS.includes(t.s)) {
+              const close = parseFloat(t.c)
+              const open  = parseFloat(t.o)
+              // miniTicker doesn't include priceChangePercent — compute it
+              const chg = (open > 0 && isFinite(close) && isFinite(open))
+                ? ((close - open) / open) * 100
+                : 0
               update[t.s] = {
-                price:  parseFloat(t.c),
-                chg:    isNaN(parseFloat(t.P)) ? 0 : parseFloat(t.P),
-                volume: parseFloat(t.q)/1e6,
+                price:  close,
+                chg,
+                volume: parseFloat(t.q) / 1e6,
                 high:   parseFloat(t.h),
                 low:    parseFloat(t.l),
-                open:   parseFloat(t.o),
+                open,
               }
             }
           })
