@@ -1,54 +1,65 @@
 -- ============================================================
--- FXS Exchange — Supabase Schema
+-- FXS Exchange — Supabase Schema (V2.5.2 — Phase 2 hardened)
 -- Run this in: Supabase Dashboard → SQL Editor → New Query
 -- ============================================================
+--
+-- Security model:
+-- - Auth: Supabase Auth (email + password, optionally magic link)
+-- - Authorization: Row Level Security policies based on auth.uid()
+-- - All tables enforce: a user can only read/write their own rows
+-- - The anon key in the client is RLS-restricted (cannot bypass policies)
+--
+-- ============================================================
 
--- Enable UUID extension
 create extension if not exists "uuid-ossp";
 
 -- ============================================================
--- SIWE Sessions — auth no-KYC
+-- profiles — extends auth.users with FXSEDGE-specific fields
+-- Created automatically when a user signs up (trigger below)
 -- ============================================================
-create table if not exists siwe_sessions (
-  id          uuid primary key default uuid_generate_v4(),
-  address     text not null,          -- 0x wallet address
-  chain_id    int  not null default 1,
-  nonce       text not null,
-  issued_at   timestamptz not null,
-  signature   text not null,
-  created_at  timestamptz not null default now(),
-  
-  constraint siwe_sessions_address_nonce_unique unique (address, nonce)
+create table if not exists public.profiles (
+  id              uuid primary key references auth.users(id) on delete cascade,
+  email           text,
+  tier            text not null default 'free' check (tier in ('free', 'pro', 'admin')),
+  trial_ends_at   timestamptz,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
 );
 
--- Index for fast lookups by wallet address
-create index if not exists siwe_sessions_address_idx on siwe_sessions(address);
+-- Auto-create profile on signup with 30-day Pro trial
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, email, tier, trial_ends_at)
+  values (new.id, new.email, 'free', now() + interval '30 days');
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
 
 -- ============================================================
--- Watchlist — user's tracked pairs
+-- watchlist — user's tracked pairs
 -- ============================================================
-create table if not exists watchlist (
+create table if not exists public.watchlist (
   id          uuid primary key default uuid_generate_v4(),
-  user_id     text not null,          -- wallet address (from SIWE)
-  pair        text not null,          -- e.g. 'BTCUSDT'
-  position    int  not null default 0, -- display order
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  pair        text not null,
+  position    int  not null default 0,
   created_at  timestamptz not null default now(),
-  
   constraint watchlist_user_pair_unique unique (user_id, pair)
 );
-
-create index if not exists watchlist_user_idx on watchlist(user_id);
-
--- Default watchlist for new users (applied in app, not DB)
--- ['BTCUSDT', 'ETHUSDT', 'SOLUSDT']
+create index if not exists watchlist_user_idx on public.watchlist(user_id);
 
 -- ============================================================
--- Trade History — simulated trades (Phase 1)
--- Phase 2+: replace with on-chain settlement records
+-- trade_history — phase 1 simulated trades; phase 2+ on-chain
 -- ============================================================
-create table if not exists trade_history (
+create table if not exists public.trade_history (
   id          uuid primary key default uuid_generate_v4(),
-  user_id     text not null,
+  user_id     uuid not null references auth.users(id) on delete cascade,
   pair        text not null,
   side        text not null check (side in ('buy', 'sell')),
   type        text not null check (type in ('market', 'limit', 'stop')),
@@ -56,130 +67,165 @@ create table if not exists trade_history (
   price       numeric(28, 8) not null,
   fee         numeric(28, 8) not null default 0,
   cost        numeric(28, 8) not null,
-  status      text not null default 'filled' check (status in ('pending', 'filled', 'cancelled', 'failed')),
-  tx_hash     text,                   -- on-chain tx hash (Phase 2+)
-  chain_id    int,                    -- which chain
+  status      text not null default 'filled' check (status in ('pending','filled','cancelled','failed')),
+  tx_hash     text,
+  chain_id    int,
   created_at  timestamptz not null default now()
 );
-
-create index if not exists trade_history_user_idx on trade_history(user_id);
-create index if not exists trade_history_created_idx on trade_history(created_at desc);
+create index if not exists trade_history_user_idx on public.trade_history(user_id);
+create index if not exists trade_history_created_idx on public.trade_history(created_at desc);
 
 -- ============================================================
--- Price Alerts — notify when pair hits a level
+-- price_alerts — alert when pair hits a level
 -- ============================================================
-create table if not exists price_alerts (
+create table if not exists public.price_alerts (
+  id            uuid primary key default uuid_generate_v4(),
+  user_id       uuid not null references auth.users(id) on delete cascade,
+  pair          text not null,
+  condition     text not null check (condition in ('above', 'below')),
+  target        numeric(28, 8) not null,
+  triggered     boolean not null default false,
+  triggered_at  timestamptz,
+  created_at    timestamptz not null default now()
+);
+create index if not exists alerts_user_active_idx on public.price_alerts(user_id, triggered);
+
+-- ============================================================
+-- user_settings — preferences (theme, language, layout)
+-- ============================================================
+create table if not exists public.user_settings (
+  user_id     uuid primary key references auth.users(id) on delete cascade,
+  theme       text default 'dark',
+  language    text default 'fr',
+  preferences jsonb default '{}',
+  updated_at  timestamptz not null default now()
+);
+
+-- ============================================================
+-- api_keys — encrypted API credentials (currently stored client-side
+-- in IndexedDB with AES-GCM; this table reserved for Phase 2 sync)
+-- ============================================================
+create table if not exists public.api_keys (
+  id              uuid primary key default uuid_generate_v4(),
+  user_id         uuid not null references auth.users(id) on delete cascade,
+  exchange        text not null check (exchange in ('bitunix', 'bitget')),
+  encrypted_key   text not null,
+  encrypted_secret text not null,
+  encrypted_passphrase text,
+  created_at      timestamptz not null default now(),
+  unique (user_id, exchange)
+);
+
+-- ============================================================
+-- error_logs — server-side monitoring
+-- ============================================================
+create table if not exists public.error_logs (
   id          uuid primary key default uuid_generate_v4(),
-  user_id     text not null,
-  pair        text not null,
-  condition   text not null check (condition in ('above', 'below')),
-  target      numeric(28, 8) not null,
-  triggered   boolean not null default false,
-  triggered_at timestamptz,
+  message     text not null,
+  context     text,
+  url         text,
+  user_agent  text,
+  user_id     uuid references auth.users(id) on delete set null,
   created_at  timestamptz not null default now()
 );
-
-create index if not exists alerts_user_active_idx on price_alerts(user_id, triggered);
-
--- ============================================================
+create index if not exists error_logs_created_idx on public.error_logs(created_at desc);
 
 -- ============================================================
--- ⚠️  SECURITY NOTICE — Phase 1 RLS limitation
--- ============================================================
--- The RLS policies above use current_setting('app.wallet_address')
--- which is set by the CLIENT, not validated server-side.
--- This means a determined attacker could spoof the wallet_address
--- to read other users' watchlist/trades/alerts.
---
--- Mitigation in Phase 1: data stored is non-financial (preferences only)
--- Mitigation in Phase 2: validate SIWE signature server-side via Edge Function:
---   - Create an Edge Function that takes the SIWE signature
---   - Verifies it cryptographically against the address claim
---   - Sets app.wallet_address only if signature matches
---   - Add `with check` clauses to RLS policies for write protection
---
--- Until Phase 2 is deployed, do NOT store any financial data
--- (real positions, balances, transaction signatures) in these tables.
+-- ROW LEVEL SECURITY — based on auth.uid() (cryptographically validated)
 -- ============================================================
 
+alter table public.profiles      enable row level security;
+alter table public.watchlist     enable row level security;
+alter table public.trade_history enable row level security;
+alter table public.price_alerts  enable row level security;
+alter table public.user_settings enable row level security;
+alter table public.api_keys      enable row level security;
+alter table public.error_logs    enable row level security;
 
--- Row Level Security — users can only see their own data
+-- profiles: users can read their own profile
+drop policy if exists "Users see own profile" on public.profiles;
+create policy "Users see own profile" on public.profiles
+  for select using (id = auth.uid());
+
+-- profiles: users CANNOT update tier or trial_ends_at directly.
+-- These fields are managed server-side (admin/billing functions only).
+-- If you want to allow users to update other fields (display_name, avatar, etc.),
+-- add those columns and use a column-level UPDATE policy or a SECURITY DEFINER function.
+-- Example function for updating allowed fields:
+--   create or replace function public.update_profile_safe(p_email text)
+--   returns void security definer as $$
+--   begin
+--     update public.profiles set email = p_email where id = auth.uid();
+--   end;
+--   $$ language plpgsql;
+-- For now, no UPDATE policy on profiles → users cannot self-promote to 'pro'.
+
+-- watchlist: users manage only their own
+drop policy if exists "Users manage own watchlist" on public.watchlist;
+create policy "Users manage own watchlist" on public.watchlist
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- trade_history: users see only their own
+drop policy if exists "Users see own trades" on public.trade_history;
+create policy "Users see own trades" on public.trade_history
+  for select using (user_id = auth.uid());
+
+drop policy if exists "Users insert own trades" on public.trade_history;
+create policy "Users insert own trades" on public.trade_history
+  for insert with check (user_id = auth.uid());
+
+-- price_alerts: users manage only their own
+drop policy if exists "Users manage own alerts" on public.price_alerts;
+create policy "Users manage own alerts" on public.price_alerts
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- user_settings: users manage only their own
+drop policy if exists "Users manage own settings" on public.user_settings;
+create policy "Users manage own settings" on public.user_settings
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- api_keys: users manage only their own (Phase 2)
+drop policy if exists "Users manage own keys" on public.api_keys;
+create policy "Users manage own keys" on public.api_keys
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- error_logs:
+--   - Anyone (anon + authenticated) can INSERT (reporting errors)
+--   - Only service_role can SELECT (admin dashboard server-side only)
+drop policy if exists "Anyone insert errors" on public.error_logs;
+create policy "Anyone insert errors" on public.error_logs
+  for insert to anon, authenticated with check (true);
+
+drop policy if exists "Service role read errors" on public.error_logs;
+create policy "Service role read errors" on public.error_logs
+  for select to service_role using (true);
+
 -- ============================================================
-
--- Enable RLS on all tables
-alter table siwe_sessions  enable row level security;
-alter table watchlist      enable row level security;
-alter table trade_history  enable row level security;
-alter table price_alerts   enable row level security;
-
--- Policies: user_id must match the wallet address passed in the request
--- In Phase 1, we trust the client to send the correct address.
--- In Phase 2, validate the SIWE signature server-side via Edge Function.
-
-create policy "Users see own siwe sessions"
-  on siwe_sessions for all
-  using (address = current_setting('app.wallet_address', true));
-
-create policy "Users manage own watchlist"
-  on watchlist for all
-  using (user_id = current_setting('app.wallet_address', true));
-
-create policy "Users see own trades"
-  on trade_history for all
-  using (user_id = current_setting('app.wallet_address', true));
-
-create policy "Users manage own alerts"
-  on price_alerts for all
-  using (user_id = current_setting('app.wallet_address', true));
-
+-- Useful views (PnL aggregation)
 -- ============================================================
--- Useful views
--- ============================================================
-
--- PnL summary per user per pair
-create or replace view trade_pnl as
+create or replace view public.trade_pnl as
 select
   user_id,
   pair,
-  count(*) filter (where side = 'buy')  as buy_count,
-  count(*) filter (where side = 'sell') as sell_count,
+  count(*) filter (where side = 'buy')   as buy_count,
+  count(*) filter (where side = 'sell')  as sell_count,
   sum(cost) filter (where side = 'buy')  as total_bought,
   sum(cost) filter (where side = 'sell') as total_sold,
   sum(fee) as total_fees,
   max(created_at) as last_trade_at
-from trade_history
+from public.trade_history
 where status = 'filled'
 group by user_id, pair;
 
 -- ============================================================
--- Done. Tables created:
---   siwe_sessions, watchlist, trade_history, price_alerts
--- View created:
---   trade_pnl
+-- MIGRATION NOTES (if you previously ran the v1 schema):
 -- ============================================================
-
--- ── Error Logs (server-side monitoring) ──
--- Public insert allowed (anyone can report errors), select restricted to service role
-CREATE TABLE IF NOT EXISTS public.error_logs (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  message TEXT NOT NULL,
-  context TEXT,
-  url TEXT,
-  user_agent TEXT,
-  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Index for recent errors
-CREATE INDEX IF NOT EXISTS idx_error_logs_created_at ON public.error_logs(created_at DESC);
-
--- RLS — only service role can read; anon can insert (rate-limited via app logic)
-ALTER TABLE public.error_logs ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Allow anon insert errors" ON public.error_logs
-  FOR INSERT TO anon
-  WITH CHECK (true);
-
-CREATE POLICY "Service role read errors" ON public.error_logs
-  FOR SELECT TO service_role
-  USING (true);
+-- The previous schema used user_id of type TEXT (wallet address).
+-- This new schema uses UUID linked to auth.users(id).
+--
+-- If you have existing data with text user_id, run these in order:
+--   1. Backup: pg_dump or export to CSV via dashboard
+--   2. Drop old tables: drop table watchlist, trade_history, price_alerts cascade;
+--   3. Re-run this whole file
+-- The siwe_sessions table from v1 is no longer needed (replaced by Supabase Auth).
+-- ============================================================

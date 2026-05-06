@@ -6,23 +6,13 @@ const JUPITER_API = 'https://quote-api.jup.ag/v6'
 
 export const FXS_FEE_BPS = 50 // 0.5% — same as Paraswap
 
-// ⚠️  PLACEHOLDER — REPLACE BEFORE PRODUCTION USE
-// This address is NOT controlled by FXSEDGE. Until you replace it with
-// your own Solana wallet, all Solana swap fees go to an unknown party.
-// To configure properly:
-//   1. Create a Solana wallet you control (e.g. via Phantom)
-//   2. Replace the address below with your public key
-//   3. Create an Associated Token Account (ATA) for each token you accept fees in
-//   4. Pass that ATA as `feeAccount` in the Jupiter swap request
-export const FXS_FEE_RECIPIENT_SOL = 'EUgnQVbJaA7Zj5cwbJLLqjiPjtJCcvbF8N4gxrAGXGyJ' // PLACEHOLDER
-
-// Runtime guard: log a clear warning when used
-if (typeof window !== 'undefined' && !import.meta.env.PROD) {
-  console.warn(
-    '[FXSEDGE] Solana fee recipient is a PLACEHOLDER. ' +
-    'Replace FXS_FEE_RECIPIENT_SOL in src/lib/solana.js before production.'
-  )
-}
+// FXSEDGE production Solana fee recipient (verified by user)
+// Setup checklist (one-time, before production swaps):
+//   1. Create an Associated Token Account (ATA) for each output token you want to collect fees in
+//      e.g. for USDC: spl-token create-account EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v --owner 7NfhKt5i8guHj4nfhrN4XrdEWK7yxmz92wDyTa9g8EnC
+//   2. Pass the ATA address as `feeAccount` in the Jupiter swap request
+//   3. Without an ATA, Jupiter ignores the platformFeeBps silently (no fee collected)
+export const FXS_FEE_RECIPIENT_SOL = '7NfhKt5i8guHj4nfhrN4XrdEWK7yxmz92wDyTa9g8EnC'
 
 // Top tokens on Solana
 export const SOL_TOKENS = [
@@ -94,25 +84,28 @@ export async function getJupiterQuote({ inputMint, outputMint, amount, slippageB
 }
 
 // ── Jupiter Swap ──
-export async function getJupiterSwapTx({ quote, userPublicKey }) {
+// To collect Solana fees, pass `feeAccount` = an ATA owned by FXS_FEE_RECIPIENT_SOL
+// for the OUTPUT token of the swap. Without it, platformFeeBps is silently ignored.
+// One ATA per output token (USDC, USDT, SOL, etc.) is required for full coverage.
+export async function getJupiterSwapTx({ quote, userPublicKey, feeAccount }) {
+  const body = {
+    quoteResponse: quote,
+    userPublicKey,
+    wrapAndUnwrapSol: true,
+  }
+  if (feeAccount) body.feeAccount = feeAccount
+
   const r = await fetch(`${JUPITER_API}/swap`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      quoteResponse: quote,
-      userPublicKey,
-      wrapAndUnwrapSol: true,
-      // Fee account: doit être un Associated Token Account du token de sortie
-      // détenu par FXS_FEE_RECIPIENT_SOL. À configurer côté backend si activé.
-      // feeAccount: ...,
-    }),
+    body: JSON.stringify(body),
     signal: AbortSignal.timeout(10000),
   })
   if (!r.ok) {
     const err = await r.json().catch(() => ({}))
     throw new Error(err.error || `Jupiter swap failed (${r.status})`)
   }
-  return r.json() // { swapTransaction: base64 string }
+  return r.json()
 }
 
 // ── Sign + Send Transaction via Phantom ──

@@ -17,9 +17,20 @@ if (typeof window !== 'undefined' && !import.meta.env.PROD) {
   }
 }
 
-// ── Watchlist ──
-export async function getWatchlist(userId) {
+// ── Watchlist (Phase 2 — currently using localStorage in Watchlist.jsx) ──
+// SECURITY: These functions rely on Supabase Auth + RLS policies (auth.uid()).
+// The user MUST be authenticated via supabase.auth before calling.
+// RLS policies in supabase-schema.sql restrict access to rows where user_id = auth.uid().
+async function getCurrentUserId() {
+  if (!supabase) return null
+  const { data: { user } } = await supabase.auth.getUser()
+  return user?.id || null
+}
+
+export async function getWatchlist() {
   if (!supabase) return ['BTCUSDT', 'ETHUSDT', 'SOLUSDT']
+  const userId = await getCurrentUserId()
+  if (!userId) return ['BTCUSDT', 'ETHUSDT', 'SOLUSDT']
   const { data } = await supabase
     .from('watchlist')
     .select('pair')
@@ -28,24 +39,33 @@ export async function getWatchlist(userId) {
   return data?.map(r => r.pair) ?? ['BTCUSDT', 'ETHUSDT', 'SOLUSDT']
 }
 
-export async function addToWatchlist(userId, pair) {
+export async function addToWatchlist(pair) {
   if (!supabase) return
+  const userId = await getCurrentUserId()
+  if (!userId) return
   await supabase.from('watchlist').upsert({ user_id: userId, pair })
 }
 
-export async function removeFromWatchlist(userId, pair) {
+export async function removeFromWatchlist(pair) {
   if (!supabase) return
+  const userId = await getCurrentUserId()
+  if (!userId) return
   await supabase.from('watchlist').delete().eq('user_id', userId).eq('pair', pair)
 }
 
-// ── Trade history ──
+// ── Trade history (Phase 2) ──
 export async function saveTrade(trade) {
   if (!supabase) return
-  await supabase.from('trade_history').insert(trade)
+  const userId = await getCurrentUserId()
+  if (!userId) return
+  // user_id is automatically validated by RLS policy with check (user_id = auth.uid())
+  await supabase.from('trade_history').insert({ ...trade, user_id: userId })
 }
 
-export async function getTradeHistory(userId, limit = 50) {
+export async function getTradeHistory(limit = 50) {
   if (!supabase) return []
+  const userId = await getCurrentUserId()
+  if (!userId) return []
   const { data } = await supabase
     .from('trade_history')
     .select('*')
