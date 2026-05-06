@@ -5,6 +5,7 @@ import { useKlines } from '../../hooks/useKlines'
 import { hasApiKeys, futuresGetPositions, getOpenOrders, getTpslOrders, placeTpsl, cancelTpsl } from '../../lib/bitunix'
 import { fmtPx } from '../../lib/format'
 import styles from './Chart.module.css'
+import { TrendlineOverlay } from '../Trendlines/TrendlineOverlay'
 import { logSilent } from '../../lib/errorMonitor'
 
 const TF_MAP = { '1m':'1m','5m':'5m','15m':'15m','1h':'1h','4h':'4h','1d':'1d' }
@@ -578,7 +579,15 @@ export function Chart({ onToggleOrders, ordersOpen }) {
       </div>
 
       {/* Chart container */}
-      <div className={styles.outer} ref={containerRef} />
+      <div className={styles.outer} ref={containerRef}>
+        <TrendlineOverlay
+          chartRef={chartRef}
+          seriesRef={candleRef}
+          pair={pair}
+          tf={tf}
+          containerRef={containerRef}
+        />
+      </div>
     </div>
   )
 }

@@ -7,12 +7,14 @@ import {
   CHAINS, POPULAR_TOKENS, NATIVE_TOKEN, FEE_BPS, FEE_RECIPIENT
 } from '../../lib/swap0x'
 import { SolanaSwap } from './SolanaSwap'
+import { useT } from '../../lib/i18n'
 import styles from './SwapWidget.module.css'
 
 const DEFAULT_CHAIN = 42161
 const SOLANA_CHAIN = 'solana'
 
 export function SwapWidget({ onOpenWallet }) {
+  const t = useT()
   const { address, isConnected, chain } = useAccount()
   const { data: walletClient }          = useWalletClient()
   const publicClient                    = usePublicClient()
@@ -94,7 +96,7 @@ export function SwapWidget({ onOpenWallet }) {
     if (!walletClient || !publicClient || !priceRoute) return
     if (chain?.id !== chainId) {
       try { await switchChain({ chainId }) }
-      catch { setError('Changement de réseau refusé'); return }
+      catch { setError('Network switch refused'); return }
     }
     setSwapping(true); setError(null); setTxHash(null)
     try {
@@ -121,7 +123,7 @@ export function SwapWidget({ onOpenWallet }) {
       setTxHash(hash)
       setSellAmt(''); setPriceRoute(null)
       await publicClient.waitForTransactionReceipt({ hash })
-    } catch(e) { setError(e.shortMessage || e.message || 'Transaction refusée') }
+    } catch(e) { setError(e.shortMessage || e.message || t('tx_rejected')) }
     setSwapping(false)
   }
 
@@ -189,7 +191,7 @@ export function SwapWidget({ onOpenWallet }) {
         {/* Sell */}
         <div className={styles.box}>
           <div className={styles.boxTop}>
-            <span className={styles.boxLbl}>Tu vends</span>
+            <span className={styles.boxLbl}>{t('from')}</span>
           </div>
           <div className={styles.boxRow}>
             <input className={styles.amtIn} type="number" min="0" step="any"
@@ -207,7 +209,7 @@ export function SwapWidget({ onOpenWallet }) {
         {/* Buy */}
         <div className={styles.box}>
           <div className={styles.boxTop}>
-            <span className={styles.boxLbl}>Tu reçois</span>
+            <span className={styles.boxLbl}>{t('to')}</span>
             {loading && <span className={styles.loadingDot}>calcul...</span>}
           </div>
           <div className={styles.boxRow}>
@@ -229,7 +231,7 @@ export function SwapWidget({ onOpenWallet }) {
               </span>
             </div>
             <div className={styles.detRow}>
-              <span>Slippage</span>
+              <span>{t('slippage')}</span>
               <span className={styles.detVal}>0.5%</span>
             </div>
             <div className={styles.detRow}>
@@ -269,7 +271,7 @@ export function SwapWidget({ onOpenWallet }) {
             disabled={swapping || !sellAmt || !priceRoute || loading}>
             {swapping ? '⟳ Signature...'
               : !sellAmt ? 'Entre un montant'
-              : loading ? '⟳ Calcul...'
+              : loading ? `⟳ ${t('loading')}`
               : `Swap ${sellTok.symbol} → ${buyTok.symbol} ↗`}
           </button>
         )}

@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { useStore } from '../../store'
 import { fmtPx, fmt } from '../../lib/format'
 import { hasApiKeys, spotPlaceOrder, spotGetBalance, spotGetOrders, spotGetHistory, loadApiKeysAsync } from '../../lib/bitunix'
+import { useT } from '../../lib/i18n'
 import styles from './Spot.module.css'
 import { logSilent } from '../../lib/errorMonitor'
 
 export function Spot({ onOpenWallet }) {
+  const t = useT()
   const pair   = useStore(s => s.pair)
   const lastPx = useStore(s => s.lastPx)
   const base   = pair.replace('USDT','')
@@ -98,17 +100,17 @@ export function Spot({ onOpenWallet }) {
 
   const handleTrade = async () => {
     setErr(''); setOk('')
-    if (!amount || parseFloat(amount) <= 0) { setErr('Entre un montant'); return }
+    if (!amount || parseFloat(amount) <= 0) { setErr(t('enter_amount')); return }
     if (orderType === "market" && side === "buy" && (!px || px <= 0)) {
-      setErr('Prix du marché non disponible — attends quelques secondes')
+      setErr(t('loading'))
       return
     }
     if (orderType === 'limit' && (!price || parseFloat(price) <= 0)) {
-      setErr('Entre un prix limite')
+      setErr(t('enter_limit_price'))
       return
     }
     const vol = computeVolume()
-    if (!vol || parseFloat(vol) <= 0) { setErr('Volume calculé invalide'); return }
+    if (!vol || parseFloat(vol) <= 0) { setErr('Volume invalide'); return }
     setSub(true)
     try {
       const orderPrice = orderType === 'limit' && price ? String(parseFloat(price)) : "0"
@@ -119,7 +121,7 @@ export function Spot({ onOpenWallet }) {
         price:  orderPrice,
         orderType: orderType === 'limit' ? 'LIMIT' : 'MARKET',
       })
-      setOk(`✓ ${side==='buy'?'Achat':'Vente'} ${base} confirmé`)
+      setOk(`✓ ${side==='buy'?t('side_buy'):t('side_sell')} ${base}`)
       // Sound + flash
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)()
@@ -142,9 +144,9 @@ export function Spot({ onOpenWallet }) {
       logSilent(e, 'Spot.handleTrade')
       const msg = e.message || 'Erreur inconnue'
       // Show more detail for common Bitunix errors
-      if (msg.includes('10007') || msg.includes('balance')) setErr('Solde insuffisant')
-      else if (msg.includes('10001') || msg.includes('param')) setErr('Paramètre invalide — vérifier le montant minimum')
-      else if (msg.includes('sign') || msg.includes('401')) setErr('Erreur signature — reconnecte tes clés API')
+      if (msg.includes('10007') || msg.includes('balance')) setErr(t('insufficient_balance'))
+      else if (msg.includes('10001') || msg.includes('param')) setErr(t('invalid_param'))
+      else if (msg.includes('sign') || msg.includes('401')) setErr(t('sig_error'))
       else setErr(msg)
     }
     setSub(false)
@@ -207,8 +209,8 @@ export function Spot({ onOpenWallet }) {
           )}
 
           <div className={styles.tabRow}>
-            <button className={`${styles.tab} ${side==='buy'?styles.tabBuy:''}`} onClick={()=>setSide('buy')}>Acheter</button>
-            <button className={`${styles.tab} ${side==='sell'?styles.tabSell:''}`} onClick={()=>setSide('sell')}>Vendre</button>
+            <button className={`${styles.tab} ${side==='buy'?styles.tabBuy:''}`} onClick={()=>setSide('buy')}>{t('buy')}</button>
+            <button className={`${styles.tab} ${side==='sell'?styles.tabSell:''}`} onClick={()=>setSide('sell')}>{t('sell')}</button>
           </div>
 
           <div className={styles.typeRow}>
@@ -262,7 +264,7 @@ export function Spot({ onOpenWallet }) {
             onClick={handleTrade}
             disabled={submitting}
           >
-            {submitting ? '⟳ Envoi...' : side==='buy' ? `↑ Acheter ${base}` : `↓ Vendre ${base}`}
+            {submitting ? `⟳ ${t('sending')}` : side==='buy' ? `↑ ${t('buy')} ${base}` : `↓ ${t('sell')} ${base}`}
           </button>
 
           <div className={styles.footer}>Bitunix Spot · Ref FXSA · Tes fonds dans ton compte</div>

@@ -29,6 +29,13 @@ export function Comparator() {
   const [prices, setPrices] = useState({})
   const [fg, setFg] = useState(null)
   const [alertOpen, setAlertOpen] = useState(false)
+  const [ready, setReady] = useState(false)
+
+  // Defer WS connections by 400ms so chart can mount first (improves perceived load time)
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 400)
+    return () => clearTimeout(t)
+  }, [])
 
   const set = (id, bid, ask) => {
     const b = parseFloat(bid), a = parseFloat(ask)
@@ -44,7 +51,7 @@ export function Comparator() {
 
   // ── Binance WS ──
   useEffect(() => {
-    if (!pair) return
+    if (!pair || !ready) return
     let ws, dead=false, retryT
     const connect = () => {
       if (dead) return
@@ -55,11 +62,11 @@ export function Comparator() {
     }
     connect()
     return () => { dead=true;clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(e){logSilent(e,'Comparator')}} }
-  }, [pair])
+  }, [pair, ready])
 
   // ── Bybit REST ──
   useEffect(() => {
-    if (!pair) return
+    if (!pair || !ready) return
     let dead=false
     const poll = async () => {
       if (dead) return
@@ -72,11 +79,11 @@ export function Comparator() {
       if (!dead) setTimeout(poll,4000)
     }
     poll(); return()=>{dead=true}
-  }, [pair])
+  }, [pair, ready])
 
   // ── OKX WS ──
   useEffect(() => {
-    if (!pair) return
+    if (!pair || !ready) return
     let ws, dead=false, retryT
     const connect = () => {
       if (dead) return
@@ -88,11 +95,11 @@ export function Comparator() {
     }
     connect()
     return()=>{dead=true;clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(e){logSilent(e,'Comparator')}}}
-  }, [pair])
+  }, [pair, ready])
 
   // ── Bitget WS ──
   useEffect(() => {
-    if (!pair) return
+    if (!pair || !ready) return
     let ws, dead=false, retryT
     const connect = () => {
       if (dead) return
@@ -104,7 +111,7 @@ export function Comparator() {
     }
     connect()
     return()=>{dead=true;clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(e){logSilent(e,'Comparator')}}}
-  }, [pair])
+  }, [pair, ready])
 
   // ── Gate.io WS ──
   useEffect(() => {
@@ -131,7 +138,7 @@ export function Comparator() {
     }
     connect()
     return()=>{dead=true;clearTimeout(retryT);if(ws){ws.onclose=null;try{ws.close()}catch(e){logSilent(e,'Comparator')}}}
-  }, [pair])
+  }, [pair, ready])
 
   // ── HTX (Huobi) WS ──
   useEffect(() => {
@@ -175,7 +182,7 @@ export function Comparator() {
     }
     connect()
     return()=>{dead=true;clearTimeout(retryT);clearInterval(pingT);if(ws){ws.onclose=null;try{ws.close()}catch(e){logSilent(e,'Comparator')}}}
-  }, [pair])
+  }, [pair, ready])
 
   // ── Fear & Greed ──
   useEffect(() => {

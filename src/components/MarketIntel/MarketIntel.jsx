@@ -1,4 +1,5 @@
 import { useState, Component, lazy, Suspense } from 'react'
+import { useT } from '../../lib/i18n'
 import styles from './MarketIntel.module.css'
 
 // Lazy-loaded Intel components — chargés à la demande pour réduire le bundle initial
@@ -59,55 +60,55 @@ class IntelBoundary extends Component {
 // Grouped tabs for clean navigation
 const GROUPS = [
   {
-    label: '📊 Marché',
+    labelKey: 'market_intel_market', emoji: '📊',
     tabs: [
-      { id:'scanner',  icon:'🔍', label:'Scanner'    },
-      { id:'asym',     icon:'⚖',  label:'R:R Async.' },
-      { id:'patterns', icon:'🎯', label:'Patterns'    },
-      { id:'harmonic', icon:'🦋', label:'Harmonics'   },
-      { id:'sentiment',icon:'🧠', label:'Sentiment'   },
-      { id:'corr',     icon:'🔗', label:'Corrélation'  },
-      { id:'calendar', icon:'📅', label:'Calendrier'   },
+      { id:'scanner',  icon:'🔍', labelKey:'scanner' },
+      { id:'asym',     icon:'⚖',  labelKey:'asym_rr' },
+      { id:'patterns', icon:'🎯', labelKey:'patterns' },
+      { id:'harmonic', icon:'🦋', labelKey:'harmonics' },
+      { id:'sentiment',icon:'🧠', labelKey:'sentiment' },
+      { id:'corr',     icon:'🔗', labelKey:'correlation' },
+      { id:'calendar', icon:'📅', labelKey:'calendar' },
     ]
   },
   {
-    label: '📖 Carnet',
+    labelKey: 'orderbook', emoji: '📖',
     tabs: [
-      { id:'heatmap',  icon:'🔥', label:'Heatmap 3D'  },
-      { id:'aggbook',  icon:'📚', label:'Agrégé'      },
-      { id:'radar',    icon:'🎯', label:'Radar Liq.'  },
+      { id:'heatmap',  icon:'🔥', labelKey:'heatmap' },
+      { id:'aggbook',  icon:'📚', labelKey:'aggregated' },
+      { id:'radar',    icon:'🎯', labelKey:'liq_radar' },
     ]
   },
   {
-    label: '⚡ Flow',
+    labelKey: 'flow', emoji: '⚡',
     tabs: [
-      { id:'delta',    icon:'⚡', label:'Delta Flow'  },
-      { id:'funding',  icon:'💰', label:'Funding'     },
-      { id:'options',  icon:'📊', label:'Options IV'  },
-      { id:'alpha',    icon:'🚀', label:'Alpha Calls' },
+      { id:'delta',    icon:'⚡', labelKey:'delta_flow' },
+      { id:'funding',  icon:'💰', labelKey:'funding_rates' },
+      { id:'options',  icon:'📊', labelKey:'options_iv' },
+      { id:'alpha',    icon:'🚀', labelKey:'alpha_calls' },
     ]
   },
   {
-    label: '🔐 On-Chain',
+    labelKey: 'onchain', emoji: '🔐',
     tabs: [
-      { id:'insider',     icon:'🕵️', label:'Insiders'    },
-      { id:'multiaccount',icon:'👛', label:'Multi-Wallet' },
-      { id:'unlock',      icon:'🔓', label:'Unlocks'      },
-      { id:'flowdetect',  icon:'⚡', label:'Flow Detect'  },
+      { id:'insider',     icon:'🕵️', labelKey:'insiders' },
+      { id:'multiaccount',icon:'👛', labelKey:'multi_wallet' },
+      { id:'unlock',      icon:'🔓', labelKey:'unlocks' },
+      { id:'flowdetect',  icon:'⚡', labelKey:'flow_detect' },
     ]
   },
   {
-    label: '🗺️ Vue Globale',
+    labelKey: 'global_view', emoji: '🗺️',
     tabs: [
-      { id:'cryptomap',  icon:'🟩', label:'Crypto Map'  },
-      { id:'sectors',    icon:'📊', label:'Secteurs'    },
+      { id:'cryptomap',  icon:'🟩', labelKey:'crypto_map' },
+      { id:'sectors',    icon:'📊', labelKey:'sectors' },
     ]
   },
   {
-    label: '🧪 Degen Tools',
+    labelKey: 'degen', emoji: '🧪',
     tabs: [
-      { id:'devwallet',  icon:'🕵️', label:'Dev Tracker'  },
-      { id:'pretrade',   icon:'🛡️', label:'Token Scan'   },
+      { id:'devwallet',  icon:'🕵️', labelKey:'dev_tracker' },
+      { id:'pretrade',   icon:'🛡️', labelKey:'token_scan' },
     ]
   },
 ]
@@ -115,34 +116,35 @@ const GROUPS = [
 const ALL_TABS = GROUPS.flatMap(g => g.tabs)
 
 export function MarketIntel() {
-  const [activeGroup, setActiveGroup] = useState('📊 Marché')
+  const t = useT()
+  const [activeGroup, setActiveGroup] = useState(GROUPS[0].labelKey)
   const [tab, setTab] = useState('scanner')
 
-  const currentGroup = GROUPS.find(g => g.label === activeGroup) || GROUPS[0]
+  const currentGroup = GROUPS.find(g => g.labelKey === activeGroup) || GROUPS[0]
 
   return (
     <div className={styles.wrap}>
       {/* Group selector */}
       <div className={styles.groups}>
         {GROUPS.map(g => (
-          <button key={g.label}
-            className={styles.group + (activeGroup===g.label ? ' '+styles.groupOn : '')}
-            onClick={() => { setActiveGroup(g.label); setTab(g.tabs[0].id) }}
+          <button key={g.labelKey}
+            className={styles.group + (activeGroup===g.labelKey ? ' '+styles.groupOn : '')}
+            onClick={() => { setActiveGroup(g.labelKey); setTab(g.tabs[0].id) }}
           >
-            {g.label}
+            {g.emoji} {t(g.labelKey)}
           </button>
         ))}
       </div>
 
       {/* Tab bar for current group */}
       <div className={styles.tabs}>
-        {currentGroup.tabs.map(t => (
-          <button key={t.id}
-            className={styles.tab + (tab===t.id ? ' '+styles.tabOn : '')}
-            onClick={() => setTab(t.id)}
+        {currentGroup.tabs.map(tb => (
+          <button key={tb.id}
+            className={styles.tab + (tab===tb.id ? ' '+styles.tabOn : '')}
+            onClick={() => setTab(tb.id)}
           >
-            <span className={styles.tabIcon}>{t.icon}</span>
-            <span className={styles.tabLabel}>{t.label}</span>
+            <span className={styles.tabIcon}>{tb.icon}</span>
+            <span className={styles.tabLabel}>{t(tb.labelKey)}</span>
           </button>
         ))}
       </div>

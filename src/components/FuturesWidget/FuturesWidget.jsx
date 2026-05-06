@@ -5,10 +5,13 @@ import { fmtPx, fmt } from '../../lib/format'
 import { useT } from '../../lib/i18n'
 import { TradeCard } from '../TradeCard/TradeCard'
 import { recordTrade } from '../SessionBar/SessionBar'
+import { TrailingStopModal } from '../TrailingStop/TrailingStopModal'
+import { getAllTrails, removeTrail } from '../../lib/trailingStop'
 import {
   hasApiKeys, futuresPlaceOrder, futuresGetBalance,
   futuresGetPositions, futuresClosePosition, futuresSetLeverage,
-  getOpenOrders, getMyTrades, loadApiKeysAsync
+  getOpenOrders, getMyTrades, loadApiKeysAsync,
+  placeTpsl, getTpslOrders, cancelTpsl
 } from '../../lib/bitunix'
 import { hasBitgetKeys, bitgetFuturesBalance, bitgetGetPositions, bitgetPlaceOrder, bitgetClosePosition, bitgetGetOrders, bitgetGetHistory, loadBitgetKeysAsync } from '../../lib/bitget'
 import styles from './FuturesWidget.module.css'
@@ -50,6 +53,7 @@ export function FuturesWidget({ onOpenWallet }) {
   const [orders, setOrders]   = useState([])
   const [history, setHistory] = useState([])
   const [shareTrade, setShareTrade] = useState(null)
+  const [trailingPos, setTrailingPos] = useState(null)
 
   const posUSD = qty && lastPx ? parseFloat(qty)*lastPx : 0
 
@@ -141,6 +145,49 @@ export function FuturesWidget({ onOpenWallet }) {
 
   // Auto-load data when keys are connected
   useEffect(() => { if (keyed) loadData() }, [keyed])
+
+  // Trailing Stop: listen for SL move events and update on exchange
+  useEffect(() => {
+    if (!keyed) return
+    const handler = async (e) => {
+      const { pair: trailPair, side, newSL, trail } = e.detail || {}
+      // Find the position
+      const pos = positions.find(p => {
+        const pIsLong = (p.side || '').toUpperCase() === 'LONG' || (p.side || '').toUpperCase() === 'BUY'
+        return p.symbol === trailPair && (pIsLong ? side === 'long' : side === 'short')
+      })
+      if (!pos) {
+        // Position closed externally — clean up trail
+        removeTrail(trailPair, side)
+        return
+      }
+      try {
+        if (trail.exchange === 'bitunix') {
+          // Cancel existing TPSL for this position then place new one
+          const existing = await getTpslOrders(trailPair).catch(() => null)
+          const list = Array.isArray(existing) ? existing : (existing?.list || [])
+          for (const o of list) {
+            if (o.symbol === trailPair && (o.id || o.orderId)) {
+              await cancelTpsl(o.id || o.orderId).catch(() => {})
+            }
+          }
+          await placeTpsl({
+            symbol: trailPair,
+            positionId: pos.positionId,
+            slPrice: newSL,
+            slQty: pos.qty,
+          })
+          setOk(`📍 Trailing SL → ${fmtPx(newSL)}`)
+          setTimeout(() => setOk(''), 3000)
+        }
+        // Bitget: not yet wired (would need similar API, skipping for now)
+      } catch (err) {
+        logSilent(err, 'TrailingStop.update')
+      }
+    }
+    window.addEventListener('fxs:trailMove', handler)
+    return () => window.removeEventListener('fxs:trailMove', handler)
+  }, [keyed, positions])
 
   // Persist SOR toggle
   useEffect(() => {
@@ -565,6 +612,9 @@ export function FuturesWidget({ onOpenWallet }) {
                           timestamp: Date.now(),
                         })
                       }}>🎴</button>
+                    <button className={styles.closeBtn} style={{flex:0,padding:'6px 10px',fontSize:9,background:'rgba(140,198,63,.08)',borderColor:'rgba(140,198,63,.3)',color:'var(--grn)'}}
+                      onClick={() => setTrailingPos({ ...p, exchange })}
+                      title="Trailing Stop">📍</button>
                   </div>
                 </div>
               )})}
@@ -628,6 +678,7 @@ export function FuturesWidget({ onOpenWallet }) {
 
       <div className={styles.footer}>⚡ {exchange==='bitget'?'Bitget':'Bitunix'} Perps · {exchange==='bitget'?'Ref FXSEDGE':'Ref FXSA'} · Tes fonds dans ton compte</div>
       {shareTrade && <TradeCard trade={shareTrade} onClose={() => setShareTrade(null)} />}
+      {trailingPos && <TrailingStopModal position={trailingPos} lastPrice={lastPx} onClose={() => setTrailingPos(null)} />}
     </div>
   )
 }

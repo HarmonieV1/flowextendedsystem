@@ -1,25 +1,10 @@
-# FXSEDGE — TODO Session 4
+# FXSEDGE — Session 5
 
-## EN COURS
-
-### 1. Watchlist avec micro-charts
-- [ ] Composant Watchlist avec sparklines 24h
-- [ ] Hook useWatchlist + localStorage persist
-- [ ] Bouton ⭐ dans le Ticker pour ajouter/retirer
-
-### 2. Trade Sharing Cards
-- [ ] Composant TradeCard (Canvas API)
-- [ ] 2 styles (Editorial / Brutalist)
-- [ ] Bouton "📋 Share" sur les positions et trade history
-- [ ] Download PNG + Copy to clipboard
-
-### 3. Asymmetric Risk Scanner
-- [ ] Composant AsymmetricRisk dans Intel
-- [ ] Scan paires + détection support proche / résistance loin
-- [ ] R:R ratio calculé automatiquement
-- [ ] Filtrage seuil minimum (ex: R:R > 3)
-
-### 4. Session Stats Bar
-- [ ] Hook useSession (localStorage)
-- [ ] Track: durée, trades, PnL, win rate, best/worst
-- [ ] Barre fixe entre Ticker et Comparator
+## TODO
+- [ ] 1. i18n complet (Spot, SwapWidget, Intel) + reactivité totale
+- [ ] 2. Trailing Stop (timer client qui bouge le SL)
+- [ ] 3. Trendlines / Drawing tools sur le chart
+- [ ] 4. Optimisation chargement initial (réduire le temps de boot)
+- [ ] 5. Mobile QA fixes (touch targets, scroll, tap zones)
+- [ ] 6. Health check global (tous les routings, états, edge cases)
+- [ ] 7. Push V2.5 + backup zip

@@ -94,6 +94,8 @@ export const translations = {
 
   // ── Intel ──
   'market_intel': { fr: 'Market Intel', en: 'Market Intel' },
+  'market_intel_market': { fr: 'Marché', en: 'Market' },
+  'asym_rr': { fr: 'R:R Async.', en: 'Async. R:R' },
   'orderbook': { fr: 'Carnet', en: 'Order Book' },
   'flow': { fr: 'Flow', en: 'Flow' },
   'onchain': { fr: 'On-Chain', en: 'On-Chain' },

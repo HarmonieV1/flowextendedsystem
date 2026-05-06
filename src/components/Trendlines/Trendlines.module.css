@@ -1,0 +1,29 @@
+.toolbar {
+  position: absolute; top: 6px; left: 8px; z-index: 5;
+  display: flex; gap: 4px;
+  background: rgba(15,15,18,0.85); backdrop-filter: blur(8px);
+  border: 1px solid var(--brd); border-radius: 6px; padding: 3px;
+}
+.tool, .toolOn {
+  width: 26px; height: 26px;
+  background: transparent; border: 1px solid transparent; border-radius: 4px;
+  color: var(--txt2); font-size: 14px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: .12s;
+}
+.tool:hover { background: var(--bg3); color: var(--txt); }
+.toolOn { background: var(--grn2); border-color: var(--grn); color: var(--grn); }
+
+.pendingHint {
+  position: absolute; top: 40px; left: 8px; z-index: 5;
+  padding: 4px 8px; background: rgba(140,198,63,0.15); border: 1px solid var(--grn);
+  border-radius: 4px; font-size: 10px; color: var(--grn); font-weight: 600;
+  pointer-events: none;
+}
+
+.svg {
+  position: absolute; inset: 0;
+  z-index: 4;
+}
+.delHandle { cursor: pointer; opacity: 0.5; transition: opacity .12s; pointer-events: auto; }
+.delHandle:hover { opacity: 1; }

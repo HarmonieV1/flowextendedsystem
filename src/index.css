@@ -133,3 +133,66 @@ button:active { transform: scale(0.97); }
   #root { font-size: 12px; }
   [class*="tabs"] { font-size: 10px !important; }
 }
+
+/* ── MOBILE QA POLISH (V2.5) ── */
+@media (max-width: 768px) {
+  /* Modals fullscreen-like on mobile */
+  [class*="modal"], [class*="Modal"] {
+    max-width: 95vw !important;
+    max-height: 92vh !important;
+    border-radius: 8px !important;
+  }
+  /* Bigger close buttons */
+  [class*="closeBtn"], [class*="CloseBtn"] {
+    min-width: 32px !important;
+    min-height: 32px !important;
+  }
+  /* Tab scrolling on small screens */
+  [class*="tabs"], [class*="Tabs"] {
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+  }
+  [class*="tabs"]::-webkit-scrollbar, [class*="Tabs"]::-webkit-scrollbar {
+    display: none !important;
+  }
+  /* Touch-friendly sliders / range inputs */
+  input[type="range"] { min-height: 28px; }
+  /* Position cards more compact */
+  [class*="posRow"] { padding: 8px !important; }
+  /* Better spacing in lists */
+  [class*="row"] { min-height: 36px; }
+  /* Watchlist sparklines smaller on tiny screens */
+  [class*="Watchlist_spark"] canvas { max-width: 60px !important; }
+  /* SessionBar hides "BEST"/"WORST" on tiny screens */
+  [class*="SessionBar_bar"] [class*="cell"]:nth-child(n+5) {
+    display: none;
+  }
+  /* TradeCard preview smaller on mobile */
+  [class*="TradeCard_canvas"] { max-width: 280px !important; }
+  /* Comparator stacked on small screens */
+  [class*="Comparator_bar"] {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+  /* AsymmetricRisk filters wrap better */
+  [class*="AsymmetricRisk_filters"] {
+    gap: 8px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  /* Extra-small phones */
+  [class*="navBtn"] { padding: 4px 6px !important; font-size: 9px !important; }
+  [class*="Ticker_logo"] { font-size: 13px !important; }
+  /* Hide nav text, show icons only on tiniest screens */
+  [class*="Ticker_navSep"] { margin: 0 4px !important; }
+}
+
+/* Landscape mobile — make sure chart is visible */
+@media (max-height: 500px) and (orientation: landscape) {
+  [class*="Ticker_header"] { min-height: 40px !important; }
+  [class*="MarketOverview"] { display: none !important; }
+}
+
+/* Prevent zoom on double-tap (mobile Safari) */
+* { touch-action: manipulation; }
