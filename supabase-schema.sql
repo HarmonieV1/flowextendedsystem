@@ -82,6 +82,27 @@ create table if not exists price_alerts (
 create index if not exists alerts_user_active_idx on price_alerts(user_id, triggered);
 
 -- ============================================================
+
+-- ============================================================
+-- ⚠️  SECURITY NOTICE — Phase 1 RLS limitation
+-- ============================================================
+-- The RLS policies above use current_setting('app.wallet_address')
+-- which is set by the CLIENT, not validated server-side.
+-- This means a determined attacker could spoof the wallet_address
+-- to read other users' watchlist/trades/alerts.
+--
+-- Mitigation in Phase 1: data stored is non-financial (preferences only)
+-- Mitigation in Phase 2: validate SIWE signature server-side via Edge Function:
+--   - Create an Edge Function that takes the SIWE signature
+--   - Verifies it cryptographically against the address claim
+--   - Sets app.wallet_address only if signature matches
+--   - Add `with check` clauses to RLS policies for write protection
+--
+-- Until Phase 2 is deployed, do NOT store any financial data
+-- (real positions, balances, transaction signatures) in these tables.
+-- ============================================================
+
+
 -- Row Level Security — users can only see their own data
 -- ============================================================
 

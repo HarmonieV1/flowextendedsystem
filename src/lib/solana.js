@@ -5,7 +5,24 @@
 const JUPITER_API = 'https://quote-api.jup.ag/v6'
 
 export const FXS_FEE_BPS = 50 // 0.5% — same as Paraswap
-export const FXS_FEE_RECIPIENT_SOL = 'EUgnQVbJaA7Zj5cwbJLLqjiPjtJCcvbF8N4gxrAGXGyJ' // À remplacer par ton wallet Solana
+
+// ⚠️  PLACEHOLDER — REPLACE BEFORE PRODUCTION USE
+// This address is NOT controlled by FXSEDGE. Until you replace it with
+// your own Solana wallet, all Solana swap fees go to an unknown party.
+// To configure properly:
+//   1. Create a Solana wallet you control (e.g. via Phantom)
+//   2. Replace the address below with your public key
+//   3. Create an Associated Token Account (ATA) for each token you accept fees in
+//   4. Pass that ATA as `feeAccount` in the Jupiter swap request
+export const FXS_FEE_RECIPIENT_SOL = 'EUgnQVbJaA7Zj5cwbJLLqjiPjtJCcvbF8N4gxrAGXGyJ' // PLACEHOLDER
+
+// Runtime guard: log a clear warning when used
+if (typeof window !== 'undefined' && !import.meta.env.PROD) {
+  console.warn(
+    '[FXSEDGE] Solana fee recipient is a PLACEHOLDER. ' +
+    'Replace FXS_FEE_RECIPIENT_SOL in src/lib/solana.js before production.'
+  )
+}
 
 // Top tokens on Solana
 export const SOL_TOKENS = [
